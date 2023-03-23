@@ -5,6 +5,19 @@
   "version": "0.2.0",
   "configurations": [
     {
+      "name": "Python - HPC - Nerfstudio",
+      "type": "python",
+      "request": "attach",
+      "port": 4565,
+      "host": "localhost",
+      "pathMappings": [
+          {
+              "localRoot": "${workspaceFolder}",
+              "remoteRoot": "/homedtic/xpavon/nerfstudio_root/nerfstudio"
+          }
+      ],
+    },
+    {
       "name": "Launch Chrome against localhost",
       "request": "launch",
       "type": "chrome",
@@ -114,3 +127,4 @@
     },
   ]
 }
+
