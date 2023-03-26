@@ -10,7 +10,7 @@ All nerfstudio components have their corresponding <a target="_blank" href="http
 
 *Config* hierarchy is very organized:
 
-<object style="width:75%;height:75%" data="../diagrams/config_hierarchy.svg" type="image/svg+xml"></object>
+<object style="width:75%;height:75%" data="../diagrams/config_hierarchy.svg?sanitize=true" type="image/svg+xml"></object>
 
 A config object always contains: 
 - Its own corresponding fields, specific to its purpose.     
