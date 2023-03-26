@@ -83,7 +83,78 @@ Say we want to implement a model that takes in the Blender dataset as input. We 
 
 (ns-train is the command we use to start or resume a particular training session.) 
 
-###### train.py
+##### train.py
 - Tyro reads command line arguments passed by user (such as method, data dir, etc.) and instantiates the corresponding TrainerConfig object. 
--
-- The trainer object is instantiated by calling the setup() method of the config class.
+- (config object self prints to terminal)
+```python
+# train.py
+def train_loop(local_rank: int, world_size: int, config: TrainerConfig, global_rank: int = 0):
+    """Main training function that sets up and runs the trainer per process
+
+    Args:
+        local_rank: current rank of process
+        world_size: total number of gpus available
+        config: config file specifying training regimen
+    """
+    _set_random_seed(config.machine.seed + global_rank)
+    trainer = config.setup(local_rank=local_rank, world_size=world_size) # (1)
+    trainer.setup() # <---- triggers all configs to setup() (2)
+    trainer.train() # (3)
+```
+- (1) The trainer object is instantiated by calling the setup() method of the config class.
+- (2) trainer.setup() is called, which triggers the setup of all its subcomponent (e.g pipeline, optimizers, etc.) configs, thus making everything ready to begin training.
+- (3) trainer.run() is called. 
+
+##### trainer.train()
+As expected, many things happen when trainer.train() is invoked. Below is an ultra stripped down version of the actual function implementation.
+```python
+# trainer.py
+def train(self) -> None:
+        """Train the model."""
+            ...
+            for step in range(self._start_step, self._start_step + num_iterations): # (1)
+                ...
+                self.pipeline.train() # (2)
+                ...
+                # time the forward pass
+                loss, loss_dict, metrics_dict = self.train_iteration(step) # (3)
+                
+                # metrics and viewer stuff
+                ...
+```
+
+- (1) Train loop
+- (2) The pipeline is prepared for train mode. The reason is that the Pipeline class inherits from nn.Module.
+- (3) **Forward pass + backpropagation** of the pipeline:
+    ```python
+    # trainer.py
+    def train_iteration(self, step: int) -> TRAIN_INTERATION_OUTPUT:
+        ...
+        _, loss_dict, metrics_dict = self.pipeline.get_train_loss_dict(step=step)
+        ...
+    ```
+    Which is what actually performs the current forward step through the whole pipeline, reporting the losses back to the trainer so they can be backpropagated.
+
+
+##### pipeline.get_train_loss_dict()
+
+```python
+def get_train_loss_dict(self, step: int):
+    """This function gets your training loss dict. This will be responsible for
+    getting the next batch of data from the DataManager and interfacing with the
+    Model class, feeding the data to the model's forward function.
+
+    Args:
+        step: current iteration step to update sampler if using DDP (distributed)
+    """
+    ...
+    ray_bundle, batch = self.datamanager.next_train(step) # (1)
+    model_outputs = self.model(ray_bundle, batch) # (2)
+    metrics_dict = self.model.get_metrics_dict(model_outputs, batch) # (3)
+    loss_dict = self.model.get_loss_dict(model_outputs, batch, metrics_dict) # (4)
+
+    return model_outputs, loss_dict, metrics_dict
+```
+
+- (1) (2) The pipeline obtains the next batch of data and runs it through the model.
+- (3) (4) Metrics and losses are obtained so they can be reported back to the trainer.
