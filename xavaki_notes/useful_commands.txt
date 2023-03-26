@@ -1,0 +1,5 @@
+run file in debug mode:
+python3 -m debugpy --listen localhost:4565 --wait-for-client nerfstudio/scripts/train.py --help
+
+currently mounted filesystems in nice layout
+mount | column -t
