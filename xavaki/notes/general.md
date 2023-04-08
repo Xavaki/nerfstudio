@@ -1,12 +1,12 @@
 ## Xavaki's notes on Nerfstudio
 
 ### Basic config anatomy
-All nerfstudio components have their corresponding <a target="_blank" href="https://docs.nerf.studio/en/latest/developer_guides/config.html">config</a> object. (trainers, pipelines, models, optimizers, etc.)
+Most components have their corresponding <a target="_blank" href="https://docs.nerf.studio/en/latest/developer_guides/config.html">config</a> object. (trainers, pipelines, models, optimizers, etc.)
 
 *Configs* hold component-specific data and also act as common interfaces, which allows them to "comunicate" with each other easily.
 - This enforces a separation between the data and behaviour of a component's implementation, which is neat.
 - This also facilitates modularity and scalability. 
-- (Having everything implemented as dataclasses also works really well with *tyro*, the library in charge of providing cli interactivity.)
+- Most importantly, variables that reside within such config classes can have their values modified via the command line (thanks to tyro), which makes specifying and testing different training configurations really easy.
 
 *Config* hierarchy is very organized:
 
