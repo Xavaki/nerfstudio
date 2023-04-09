@@ -36,6 +36,10 @@ EPS = 1.0e-7
 URF_SIGMA_SCALE_FACTOR = 3.0
 
 
+def hanerf_occlusion_mask_loss():
+    ...
+
+
 class DepthLossType(Enum):
     """Types of depth losses for depth supervision."""
 
