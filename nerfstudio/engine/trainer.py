@@ -105,7 +105,7 @@ class Trainer:
         callbacks: The callbacks object.
     """
 
-    pipeline: VanillaPipeline
+    pipeline: VanillaPipeline # these are just type hints !! 
     optimizers: Optimizers
     callbacks: List[TrainingCallback]
 

@@ -1,0 +1,228 @@
+<html>
+  <head>
+    <style>
+      object {
+        width: 60%;
+        height: 60%;
+      }
+    </style>
+  </head>
+  <body>
+    <pre><font color="#586E75">########## </font>Config<font color="#586E75"> ##########</font>
+        <font color="#D33682"><b>TrainerConfig</b></font><b>(</b>
+            <font color="#B58900">_target</font>=<b>&lt;</b><font color="#6C71C4"><b>class</b></font> <font color="#859900">&apos;nerfstudio.engine.trainer.Trainer&apos;</font>&gt;,
+            <font color="#B58900">output_dir</font>=<font color="#D33682"><b>PosixPath</b></font><b>(</b><font color="#859900">&apos;outputs&apos;</font><b>)</b>,
+            <font color="#B58900">method_name</font>=<font color="#859900">&apos;vanilla-nerf&apos;</font>,
+            <font color="#B58900">experiment_name</font>=<font color="#D33682"><i>None</i></font>,
+            <font color="#B58900">timestamp</font>=<font color="#859900">&apos;2023-03-25_162436&apos;</font>,
+            <font color="#B58900">machine</font>=<font color="#D33682"><b>MachineConfig</b></font><b>(</b><font color="#B58900">seed</font>=<font color="#2AA198"><b>42</b></font>, <font color="#B58900">num_gpus</font>=<font color="#2AA198"><b>1</b></font>, <font color="#B58900">num_machines</font>=<font color="#2AA198"><b>1</b></font>, <font color="#B58900">machine_rank</font>=<font color="#2AA198"><b>0</b></font>, <font color="#B58900">dist_url</font>=<font color="#859900">&apos;auto&apos;</font><b>)</b>,
+            <font color="#B58900">logging</font>=<font color="#D33682"><b>LoggingConfig</b></font><b>(</b>
+                <font color="#B58900">relative_log_dir</font>=<font color="#D33682"><b>PosixPath</b></font><b>(</b><font color="#859900">&apos;.&apos;</font><b>)</b>,
+                <font color="#B58900">steps_per_log</font>=<font color="#2AA198"><b>10</b></font>,
+                <font color="#B58900">max_buffer_size</font>=<font color="#2AA198"><b>20</b></font>,
+                <font color="#B58900">local_writer</font>=<font color="#D33682"><b>LocalWriterConfig</b></font><b>(</b>
+                    <font color="#B58900">_target</font>=&lt;class <font color="#859900">&apos;nerfstudio.utils.writer.LocalWriter&apos;</font>&gt;,
+                    <font color="#B58900">enable</font>=<font color="#586E75"><i>True</i></font>,
+                    <font color="#B58900">stats_to_track</font>=<b>(</b>
+                        &lt;EventName.ITER_TRAIN_TIME: <font color="#859900">&apos;Train Iter (time)&apos;</font>&gt;,
+                        &lt;EventName.TRAIN_RAYS_PER_SEC: <font color="#859900">&apos;Train Rays / Sec&apos;</font>&gt;,
+                        &lt;EventName.CURR_TEST_PSNR: <font color="#859900">&apos;Test PSNR&apos;</font>&gt;,
+                        &lt;EventName.VIS_RAYS_PER_SEC: <font color="#859900">&apos;Vis Rays / Sec&apos;</font>&gt;,
+                        &lt;EventName.TEST_RAYS_PER_SEC: <font color="#859900">&apos;Test Rays / Sec&apos;</font>&gt;,
+                        &lt;EventName.ETA: <font color="#859900">&apos;ETA (time)&apos;</font>&gt;
+                    <b>)</b>,
+                    <font color="#B58900">max_log_size</font>=<font color="#2AA198"><b>10</b></font>
+                <b>)</b>,
+                <font color="#B58900">enable_profiler</font>=<font color="#586E75"><i>True</i></font>
+            <b>)</b>,
+            <font color="#B58900">viewer</font>=<font color="#D33682"><b>ViewerConfig</b></font><b>(</b>
+                <font color="#B58900">relative_log_filename</font>=<font color="#859900">&apos;viewer_log_filename.txt&apos;</font>,
+                <font color="#B58900">start_train</font>=<font color="#586E75"><i>True</i></font>,
+                <font color="#B58900">zmq_port</font>=<font color="#D33682"><i>None</i></font>,
+                <font color="#B58900">launch_bridge_server</font>=<font color="#586E75"><i>True</i></font>,
+                <font color="#B58900">websocket_port</font>=<font color="#D33682"><i>None</i></font>,
+                <font color="#B58900">websocket_port_default</font>=<font color="#2AA198"><b>7007</b></font>,
+                <font color="#B58900">ip_address</font>=<font color="#859900">&apos;127.0.0.1&apos;</font>,
+                <font color="#B58900">num_rays_per_chunk</font>=<font color="#2AA198"><b>32768</b></font>,
+                <font color="#B58900">max_num_display_images</font>=<font color="#2AA198"><b>512</b></font>,
+                <font color="#B58900">quit_on_train_completion</font>=<font color="#CB4B16"><i>False</i></font>,
+                <font color="#B58900">image_format</font>=<font color="#859900">&apos;jpeg&apos;</font>,
+                <font color="#B58900">jpeg_quality</font>=<font color="#2AA198"><b>90</b></font>,
+                <font color="#B58900">png_compression</font>=<font color="#2AA198"><b>1</b></font>
+            <b>)</b>,
+            <font color="#B58900">pipeline</font>=<font color="#D33682"><b>VanillaPipelineConfig</b></font><b>(</b>
+                <font color="#B58900">_target</font>=&lt;class <font color="#859900">&apos;nerfstudio.pipelines.base_pipeline.VanillaPipeline&apos;</font>&gt;,
+                <font color="#B58900">datamanager</font>=<font color="#D33682"><b>VanillaDataManagerConfig</b></font><b>(</b>
+                    <font color="#B58900">_target</font>=&lt;class <font color="#859900">&apos;nerfstudio.data.datamanagers.base_datamanager.VanillaDataManager&apos;</font>&gt;,
+                    <font color="#B58900">data</font>=<font color="#D33682"><i>None</i></font>,
+                    <font color="#B58900">camera_optimizer</font>=<font color="#D33682"><b>CameraOptimizerConfig</b></font><b>(</b>
+                        <font color="#B58900">_target</font>=&lt;class <font color="#859900">&apos;nerfstudio.cameras.camera_optimizers.CameraOptimizer&apos;</font>&gt;,
+                        <font color="#B58900">mode</font>=<font color="#859900">&apos;off&apos;</font>,
+                        <font color="#B58900">position_noise_std</font>=<font color="#2AA198"><b>0.0</b></font>,
+                        <font color="#B58900">orientation_noise_std</font>=<font color="#2AA198"><b>0.0</b></font>,
+                        <font color="#B58900">optimizer</font>=<font color="#D33682"><b>AdamOptimizerConfig</b></font><b>(</b>
+                            <font color="#B58900">_target</font>=&lt;class <font color="#859900">&apos;torch.optim.adam.Adam&apos;</font>&gt;,
+                            <font color="#B58900">lr</font>=<font color="#2AA198"><b>0.0006</b></font>,
+                            <font color="#B58900">eps</font>=<font color="#2AA198"><b>1e-15</b></font>,
+                            <font color="#B58900">max_norm</font>=<font color="#D33682"><i>None</i></font>,
+                            <font color="#B58900">weight_decay</font>=<font color="#2AA198"><b>0</b></font>
+                        <b>)</b>,
+                        <font color="#B58900">scheduler</font>=<font color="#D33682"><b>ExponentialDecaySchedulerConfig</b></font><b>(</b>
+                            <font color="#B58900">_target</font>=&lt;class <font color="#859900">&apos;nerfstudio.engine.schedulers.ExponentialDecayScheduler&apos;</font>&gt;,
+                            <font color="#B58900">lr_pre_warmup</font>=<font color="#2AA198"><b>1e-08</b></font>,
+                            <font color="#B58900">lr_final</font>=<font color="#D33682"><i>None</i></font>,
+                            <font color="#B58900">warmup_steps</font>=<font color="#2AA198"><b>0</b></font>,
+                            <font color="#B58900">max_steps</font>=<font color="#2AA198"><b>10000</b></font>,
+                            <font color="#B58900">ramp</font>=<font color="#859900">&apos;cosine&apos;</font>
+                        <b>)</b>,
+                        <font color="#B58900">param_group</font>=<font color="#859900">&apos;camera_opt&apos;</font>
+                    <b>)</b>,
+                    <font color="#B58900">dataparser</font>=<font color="#D33682"><b>BlenderDataParserConfig</b></font><b>(</b>
+                        <font color="#B58900">_target</font>=&lt;class <font color="#859900">&apos;nerfstudio.data.dataparsers.blender_dataparser.Blender&apos;</font>&gt;,
+                        <font color="#B58900">data</font>=<font color="#D33682"><b>PosixPath</b></font><b>(</b><font color="#859900">&apos;data/blender/lego&apos;</font><b>)</b>,
+                        <font color="#B58900">scale_factor</font>=<font color="#2AA198"><b>1.0</b></font>,
+                        <font color="#B58900">alpha_color</font>=<font color="#859900">&apos;white&apos;</font>
+                    <b>)</b>,
+                    <font color="#B58900">train_num_rays_per_batch</font>=<font color="#2AA198"><b>1024</b></font>,
+                    <font color="#B58900">train_num_images_to_sample_from</font>=<font color="#2AA198"><b>-1</b></font>,
+                    <font color="#B58900">train_num_times_to_repeat_images</font>=<font color="#2AA198"><b>-1</b></font>,
+                    <font color="#B58900">eval_num_rays_per_batch</font>=<font color="#2AA198"><b>1024</b></font>,
+                    <font color="#B58900">eval_num_images_to_sample_from</font>=<font color="#2AA198"><b>-1</b></font>,
+                    <font color="#B58900">eval_num_times_to_repeat_images</font>=<font color="#2AA198"><b>-1</b></font>,
+                    <font color="#B58900">eval_image_indices</font>=<b>(</b><font color="#2AA198"><b>0</b></font>,<b>)</b>,
+                    <font color="#B58900">camera_res_scale_factor</font>=<font color="#2AA198"><b>1.0</b></font>,
+                    <font color="#B58900">patch_size</font>=<font color="#2AA198"><b>1</b></font>
+                <b>)</b>,
+                <font color="#B58900">model</font>=<font color="#D33682"><b>VanillaModelConfig</b></font><b>(</b>
+                    <font color="#B58900">_target</font>=&lt;class <font color="#859900">&apos;nerfstudio.models.vanilla_nerf.NeRFModel&apos;</font>&gt;,
+                    <font color="#B58900">enable_collider</font>=<font color="#586E75"><i>True</i></font>,
+                    <font color="#B58900">collider_params</font>=<b>{</b><font color="#859900">&apos;near_plane&apos;</font>: <font color="#2AA198"><b>2.0</b></font>, <font color="#859900">&apos;far_plane&apos;</font>: <font color="#2AA198"><b>6.0</b></font><b>}</b>,
+                    <font color="#B58900">loss_coefficients</font>=<b>{</b><font color="#859900">&apos;rgb_loss_coarse&apos;</font>: <font color="#2AA198"><b>1.0</b></font>, <font color="#859900">&apos;rgb_loss_fine&apos;</font>: <font color="#2AA198"><b>1.0</b></font><b>}</b>,
+                    <font color="#B58900">eval_num_rays_per_chunk</font>=<font color="#2AA198"><b>4096</b></font>,
+                    <font color="#B58900">num_coarse_samples</font>=<font color="#2AA198"><b>64</b></font>,
+                    <font color="#B58900">num_importance_samples</font>=<font color="#2AA198"><b>128</b></font>,
+                    <font color="#B58900">enable_temporal_distortion</font>=<font color="#CB4B16"><i>False</i></font>,
+                    <font color="#B58900">temporal_distortion_params</font>=<b>{</b><font color="#859900">&apos;kind&apos;</font>: &lt;TemporalDistortionKind.DNERF: <font color="#859900">&apos;dnerf&apos;</font>&gt;<b>}</b>
+                <b>)</b>
+            <b>)</b>,
+            <font color="#B58900">optimizers</font>=<b>{</b>
+                <font color="#859900">&apos;fields&apos;</font>: <b>{</b>
+                    <font color="#859900">&apos;optimizer&apos;</font>: <font color="#D33682"><b>RAdamOptimizerConfig</b></font><b>(</b>
+                        <font color="#B58900">_target</font>=&lt;class <font color="#859900">&apos;torch.optim.radam.RAdam&apos;</font>&gt;,
+                        <font color="#B58900">lr</font>=<font color="#2AA198"><b>0.0005</b></font>,
+                        <font color="#B58900">eps</font>=<font color="#2AA198"><b>1e-08</b></font>,
+                        <font color="#B58900">max_norm</font>=<font color="#D33682"><i>None</i></font>,
+                        <font color="#B58900">weight_decay</font>=<font color="#2AA198"><b>0</b></font>
+                    <b>)</b>,
+                    <font color="#859900">&apos;scheduler&apos;</font>: <font color="#D33682"><i>None</i></font>
+                <b>}</b>,
+                <font color="#859900">&apos;temporal_distortion&apos;</font>: <b>{</b>
+                    <font color="#859900">&apos;optimizer&apos;</font>: <font color="#D33682"><b>RAdamOptimizerConfig</b></font><b>(</b>
+                        <font color="#B58900">_target</font>=&lt;class <font color="#859900">&apos;torch.optim.radam.RAdam&apos;</font><b>&gt;</b>,
+                        <font color="#B58900">lr</font>=<font color="#2AA198"><b>0.0005</b></font>,
+                        <font color="#B58900">eps</font>=<font color="#2AA198"><b>1e-08</b></font>,
+                        <font color="#B58900">max_norm</font>=<font color="#D33682"><i>None</i></font>,
+                        <font color="#B58900">weight_decay</font>=<font color="#2AA198"><b>0</b></font>
+                    <b>)</b>,
+                    <font color="#859900">&apos;scheduler&apos;</font>: <font color="#D33682"><i>None</i></font>
+                <b>}</b>
+            <b>}</b>,
+            <font color="#B58900">vis</font>=<font color="#859900">&apos;wandb&apos;</font>,
+            <font color="#B58900">data</font>=<font color="#D33682"><i>None</i></font>,
+            <font color="#B58900">relative_model_dir</font>=<font color="#D33682"><b>PosixPath</b></font><b>(</b><font color="#859900">&apos;nerfstudio_models&apos;</font><b>)</b>,
+            <font color="#B58900">steps_per_save</font>=<font color="#2AA198"><b>1000</b></font>,
+            <font color="#B58900">steps_per_eval_batch</font>=<font color="#2AA198"><b>500</b></font>,
+            <font color="#B58900">steps_per_eval_image</font>=<font color="#2AA198"><b>500</b></font>,
+            <font color="#B58900">steps_per_eval_all_images</font>=<font color="#2AA198"><b>25000</b></font>,
+            <font color="#B58900">max_num_iterations</font>=<font color="#2AA198"><b>1000000</b></font>,
+            <font color="#B58900">mixed_precision</font>=<font color="#CB4B16"><i>False</i></font>,
+            <font color="#B58900">save_only_latest_checkpoint</font>=<font color="#586E75"><i>True</i></font>,
+            <font color="#B58900">load_dir</font>=<font color="#D33682"><i>None</i></font>,
+            <font color="#B58900">load_step</font>=<font color="#D33682"><i>None</i></font>,
+            <font color="#B58900">load_config</font>=<font color="#D33682"><i>None</i></font>,
+            <font color="#B58900">log_gradients</font>=<font color="#CB4B16"><i>False</i></font>
+        <b>)</b>
+        <font color="#586E75">####################────────</font>
+        </pre>
+        <pre><font color="#1C6B65">[16:24:36] </font>Saving config to: outputs/unnamed/vanilla-nerf/<font color="#2AA198"><b>2023</b></font>-<font color="#2AA198"><b>03</b></font>-25_162436/config.yml          experiment_config.py:129
+            <font color="#1C6B65">[16:24:36] </font>Saving checkpoints to: outputs/unnamed/vanilla-nerf/<font color="#2AA198"><b>2023</b></font>-<font color="#2AA198"><b>03</b></font>-25_162436/nerfstudio_models        trainer.py:128
+            Setting up training dataset<font color="#B58900">...</font>
+            Caching all <font color="#2AA198"><b>100</b></font> images.
+            Setting up evaluation dataset<font color="#B58900">...</font>
+            Caching all <font color="#2AA198"><b>100</b></font> images.
+            /homedtic/xpavon/.local/lib/python3.10/site-packages/torch/optim/radam.py:76: UserWarning: optimizer contains a parameter group with duplicate parameters; in future, this will cause an error; see github.com/pytorch/pytorch/issues/40967 for more information
+              super(RAdam, self).__init__(params, defaults)
+            No checkpoints to load, training from scratch
+            <font color="#268BD2"><b>wandb</b></font>: (1) Create a W&amp;B account
+            <font color="#268BD2"><b>wandb</b></font>: (2) Use an existing W&amp;B account
+            <font color="#268BD2"><b>wandb</b></font>: (3) Don&apos;t visualize my results
+            <font color="#268BD2"><b>wandb</b></font>: Enter your choice: 3
+            <font color="#268BD2"><b>wandb</b></font>: You chose &apos;Don&apos;t visualize my results&apos;
+            <font color="#268BD2"><b>wandb</b></font>: Tracking run with wandb version 0.13.9
+            <font color="#268BD2"><b>wandb</b></font>: W&amp;B syncing is set to <b>`offline`</b> in this directory.
+            <font color="#268BD2"><b>wandb</b></font>: Run <b>`wandb online`</b> or set <b>WANDB_MODE=online</b> to enable cloud syncing.
+            <font color="#B58900"><b>logging events to: outputs/unnamed/vanilla-nerf/2023-03-25_162436</b></font>
+            <font color="#1C6B65">[16:25:00] </font>Printing max of <font color="#2AA198"><b>10</b></font> lines. Set flag <font color="#B58900">--logging.local-writer.max-log-size=</font><font color="#B58900"><b>0</b></font> to disable line        writer.py:388
+            <font color="#1C6B65">           </font>wrapping.
+            Step (% Done)       Train Iter (time)    ETA (time)           Train Rays / Sec
+            -----------------------------------------------------------------------------------
+            0 (0.00%)           5 s, 265.353 ms      60 d, 22 h, 35 m, 53 s
+            10 (0.00%)          724.260 ms           8 d, 9 h, 10 m, 53 s 3.58 K
+            ^CTraceback <b>(</b>most recent call last<b>)</b>:
+              File <font color="#859900">&quot;/homedtic/xpavon/nerfstudio_root/nerfstudio/scripts/train.py&quot;</font>, line <font color="#2AA198"><b>174</b></font>, in launch
+                <font color="#D33682"><b>main_func</b></font><b>(</b><font color="#B58900">local_rank</font>=<font color="#2AA198"><b>0</b></font>, <font color="#B58900">world_size</font>=<font color="#D33682">world_size</font>, <font color="#B58900">config</font>=<font color="#D33682">config</font><b>)</b>
+              File <font color="#859900">&quot;/homedtic/xpavon/nerfstudio_root/nerfstudio/scripts/train.py&quot;</font>, line <font color="#2AA198"><b>89</b></font>, in train_loop
+                <font color="#D33682"><b>trainer.train</b></font><b>()</b>
+              File <font color="#859900">&quot;/homedtic/xpavon/nerfstudio_root/nerfstudio/nerfstudio/engine/trainer.py&quot;</font>, line <font color="#2AA198"><b>219</b></font>, in train
+                loss, loss_dict, metrics_dict = <font color="#D33682"><b>self.train_iteration</b></font><b>(</b>step<b>)</b>
+              File <font color="#859900">&quot;/homedtic/xpavon/nerfstudio_root/nerfstudio/nerfstudio/utils/profiler.py&quot;</font>, line <font color="#2AA198"><b>43</b></font>, in wrapper
+                ret = <font color="#D33682"><b>func</b></font><b>(</b>*args, **kwargs<b>)</b>
+              File <font color="#859900">&quot;/homedtic/xpavon/nerfstudio_root/nerfstudio/nerfstudio/engine/trainer.py&quot;</font>, line <font color="#2AA198"><b>393</b></font>, in train_iteration
+                _, loss_dict, metrics_dict = <font color="#D33682"><b>self.pipeline.get_train_loss_dict</b></font><b>(</b><font color="#B58900">step</font>=<font color="#D33682">step</font><b>)</b>
+              File <font color="#859900">&quot;/homedtic/xpavon/nerfstudio_root/nerfstudio/nerfstudio/utils/profiler.py&quot;</font>, line <font color="#2AA198"><b>43</b></font>, in wrapper
+                ret = <font color="#D33682"><b>func</b></font><b>(</b>*args, **kwargs<b>)</b>
+              File <font color="#859900">&quot;/homedtic/xpavon/nerfstudio_root/nerfstudio/nerfstudio/pipelines/base_pipeline.py&quot;</font>, line <font color="#2AA198"><b>264</b></font>, in
+            get_train_loss_dict
+                ray_bundle, batch = <font color="#D33682"><b>self.datamanager.next_train</b></font><b>(</b>step<b>)</b>
+              File <font color="#859900">&quot;/homedtic/xpavon/nerfstudio_root/nerfstudio/nerfstudio/data/datamanagers/base_datamanager.py&quot;</font>, line <font color="#2AA198"><b>482</b></font>, in
+            next_train
+                batch = <font color="#D33682"><b>self.train_pixel_sampler.sample</b></font><b>(</b>image_batch<b>)</b>
+              File <font color="#859900">&quot;/homedtic/xpavon/nerfstudio_root/nerfstudio/nerfstudio/data/pixel_samplers.py&quot;</font>, line <font color="#2AA198"><b>197</b></font>, in sample
+                pixel_batch = <font color="#D33682"><b>self.collate_image_dataset_batch</b></font><b>(</b>
+              File <font color="#859900">&quot;/homedtic/xpavon/nerfstudio_root/nerfstudio/nerfstudio/data/pixel_samplers.py&quot;</font>, line <font color="#2AA198"><b>109</b></font>, in
+            collate_image_dataset_batch
+                if keep_full_image:
+            KeyboardInterrupt
+  
+            Printing profiling stats, from longest to shortest duration in seconds
+            Trainer.train_iteration: <font color="#2AA198"><b>0.5769</b></font>
+            VanillaPipeline.get_train_loss_dict: <font color="#2AA198"><b>0.5610</b></font>
+            Trainer.eval_iteration: <font color="#2AA198"><b>0.0000</b></font>
+            File &quot;/homedtic/xpavon/nerfstudio_root/nerfstudio/scripts/train.py&quot;, line 273, in &lt;module&gt;
+                for line in traceback.format_stack():
+            <font color="#268BD2"><b>wandb</b></font>: Waiting for W&amp;B process to finish... <font color="#859900">(success).</font>
+            <font color="#268BD2"><b>wandb</b></font>:
+            <font color="#268BD2"><b>wandb</b></font>: Run history:
+            <font color="#268BD2"><b>wandb</b></font>:                      ETA (time) █▄▃▂▂▂▂▁▁▁▁▁▁▁▁▁
+            <font color="#268BD2"><b>wandb</b></font>:               Train Iter (time) █▄▃▂▂▂▂▁▁▁▁▁▁▁▁▁
+            <font color="#268BD2"><b>wandb</b></font>:                      Train Loss ▁█
+            <font color="#268BD2"><b>wandb</b></font>: Train Loss Dict/rgb_loss_coarse ▁█
+            <font color="#268BD2"><b>wandb</b></font>:   Train Loss Dict/rgb_loss_fine ▁█
+            <font color="#268BD2"><b>wandb</b></font>:                Train Rays / Sec ▁▃▂▂▂▂▂▂▂█▇▇▇▆
+            <font color="#268BD2"><b>wandb</b></font>:
+            <font color="#268BD2"><b>wandb</b></font>: Run summary:
+            <font color="#268BD2"><b>wandb</b></font>:                      ETA (time) 577448.64691
+            <font color="#268BD2"><b>wandb</b></font>:               Train Iter (time) 0.57746
+            <font color="#268BD2"><b>wandb</b></font>:                      Train Loss 0.33308
+            <font color="#268BD2"><b>wandb</b></font>: Train Loss Dict/rgb_loss_coarse 0.16704
+            <font color="#268BD2"><b>wandb</b></font>:   Train Loss Dict/rgb_loss_fine 0.16604
+            <font color="#268BD2"><b>wandb</b></font>:                Train Rays / Sec 3896.18656
+            <font color="#268BD2"><b>wandb</b></font>:
+            <font color="#268BD2"><b>wandb</b></font>: You can sync this run to the cloud by running:
+            <font color="#268BD2"><b>wandb</b></font>: <b>wandb sync outputs/unnamed/vanilla-nerf/2023-03-25_162436/wandb/offline-run-20230325_162454-jndq4ba3</b>
+            <font color="#268BD2"><b>wandb</b></font>: Find logs at: <font color="#D33682"><b>outputs/unnamed/vanilla-nerf/2023-03-25_162436/wandb/offline-run-20230325_162454-jndq4ba3/logs</b></font>
+            </pre>
+  
+  
+  </body>
+</html>

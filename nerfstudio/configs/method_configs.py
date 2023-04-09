@@ -382,6 +382,10 @@ method_configs["phototourism"] = TrainerConfig(
     vis="viewer",
 )
 
+<<<<<<< HEAD
+=======
+
+>>>>>>> 716eafb2dec21c3a5e6a23b1f2350a9aea0fc662
 method_configs["hanerfacto-phototourism"] = TrainerConfig(
     method_name="phototourism",
     steps_per_eval_batch=500,
@@ -413,6 +417,7 @@ method_configs["hanerfacto-phototourism"] = TrainerConfig(
     vis="viewer",
 )
 
+<<<<<<< HEAD
 method_configs["vanilla-nerf-phototourism"] = TrainerConfig(
     method_name="vanilla-nerf-phototourism",
     steps_per_eval_batch=500,
@@ -443,6 +448,9 @@ method_configs["vanilla-nerf-phototourism"] = TrainerConfig(
     viewer=ViewerConfig(num_rays_per_chunk=1 << 15),
     vis="viewer",
 )
+=======
+
+>>>>>>> 716eafb2dec21c3a5e6a23b1f2350a9aea0fc662
 
 method_configs["nerfplayer-nerfacto"] = TrainerConfig(
     method_name="nerfplayer-nerfacto",
