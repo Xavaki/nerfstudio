@@ -33,10 +33,12 @@ from __future__ import annotations
 
 import random
 import socket
+import sys
 import traceback
 from datetime import timedelta
 from typing import Any, Callable, Optional
 
+# import debugpy
 import numpy as np
 import torch
 import torch.distributed as dist
@@ -253,4 +255,14 @@ def entrypoint():
 
 
 if __name__ == "__main__":
+    print("##################### DEV #####################")
+    if 'debugme' in sys.argv:
+        import debugpy
+        sys.argv.remove('debugme')
+        debugpy.listen(4565)
+        print("Waiting for debugger attach")
+        debugpy.wait_for_client()
+
+    
     entrypoint()
+

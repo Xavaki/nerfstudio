@@ -1,0 +1,2 @@
+#!/usr/bin/bash
+singularity exec --nv /homedtic/xpavon/nerfstudio_root/nerfstudio_0.1.19.sif /homedtic/xpavon/.local/bin/ns-render --load-config $1 --traj filename --camera-path-filename $2 --output-path $3 --rendered-output-names rgb depth

@@ -1,0 +1,2 @@
+#!/usr/bin/bash
+singularity exec --nv /homedtic/xpavon/nerfstudio_root/nerfstudio_0.1.19.sif /homedtic/xpavon/.local/bin/ns-process-data images --data $1 --output-dir $2 --use-sfm-depth --include-depth-debug
