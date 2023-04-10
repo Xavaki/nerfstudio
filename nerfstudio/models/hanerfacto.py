@@ -65,7 +65,6 @@ from nerfstudio.utils import colormaps
 
 # xx Ha-NeRF occlusion mask dependencies
 from torch import nn
-from nerfstudio.field_components.field_heads import UncertaintyFieldHead
 try:
     import tinycudann as tcnn
 except ImportError:
@@ -187,20 +186,15 @@ class HaNerfacto(Model):
         
         self.occlusion_transient_embedding_dim = 128
         self.occlusion_transient_embedding = Embedding(self.num_train_data, self.occlusion_transient_embedding_dim)
-        # tinycudann only supports up to 128 neurons
-        occlusion_mask_mlp_channels = 256
-        self.occlusion_mask_mlp = tcnn.Network(
-          n_input_dims=self.occlusion_transient_embedding_dim + self.uv_position_encoding.n_output_dims,
-          n_output_dims= occlusion_mask_mlp_channels,
-          network_config={
-              "otype": "FullyFusedMLP",
-              "activation": "ReLU",
-              "output_activation": "ReLU",
-              "n_neurons": occlusion_mask_mlp_channels,
-              "n_hidden_layers": 5,
-          }
-        )
-        self.field_head_occlusion_uncertainty = UncertaintyFieldHead(in_dim=occlusion_mask_mlp_channels, activation=nn.Sigmoid())
+        # tinycudann only supports up to 128 neurons, so we use torch implementation instead
+        W = 256 
+        n_input_dims = self.occlusion_transient_embedding_dim + self.uv_position_encoding.n_output_dims
+        self.occlusion_mask_mlp = nn.Sequential(
+                                                nn.Linear(n_input_dims, W), nn.ReLU(True),
+                                                nn.Linear(W, W), nn.ReLU(True),
+                                                nn.Linear(W, W), nn.ReLU(True),
+                                                nn.Linear(W, W), nn.ReLU(True),
+                                                nn.Linear(W, 1), nn.Sigmoid())
         # xx xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         self.density_fns = []
@@ -368,9 +362,7 @@ class HaNerfacto(Model):
             ],
             dim=-1
         )
-        x = self.occlusion_mask_mlp(occlusion_transient_embedding_input) # xq how should this be shaped?
-        # x = self.occlusion_mask_mlp(occlusion_transient_embedding_input).view(*outputs_shape, -1).to(directions)
-        # occlusion_uncertainty = self.field_head_occlusion_uncertainty(x) # (B, 1)
+        occlusion_uncertainty_mask = self.occlusion_mask_mlp(occlusion_transient_embedding_input)
         return self.rgb_loss(image, rgb) # xx
 
     # xx xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
