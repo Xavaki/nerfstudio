@@ -161,23 +161,6 @@ class TCNNHaNerfactoField(Field):
             },
         )
 
-        # xx OCCLUSION MASK
-        # self.uv_positional_encoding = tcnn.Encoding(...)
-
-        # self.occlusion_transient_embedding_dim = occlusion_transient_embedding_dim (128)
-        # self.occlusion_transient_embedding = Embedding(self.num_images, self.occlusion_transient_embedding_dim)
-        # self.occlusion_mask_mlp = tcnn.Network(
-        #   n_input_dims=self.occlusion_transient_embedding_dim + #xq in_channels_dir=42 in hanerf implementation
-        #   n_output_dims= # xq W=256 in hanerf implementation,
-        #   network_config={
-        #       "otype": "FullyFusedMLP",
-        #       "activation": "ReLU",
-        #       "output_activation": "ReLU",
-        #       "n_neurons": # xq W=256 in hanerf implementation,
-        #       "n_hidden_layers": # xq 4 in hanerf implementation,
-        #   },
-        # )
-        # self.field_head_occlusion_uncertainty = UncertaintyFieldHead(in_dim=256, activation=nn.Sigmoid)
 
         # transients
         if self.use_transient_embedding:
@@ -295,18 +278,6 @@ class TCNNHaNerfactoField(Field):
                 embedded_appearance = torch.zeros(
                     (*directions.shape[:-1], self.appearance_embedding_dim), device=directions.device
                 )
-
-        # xx OCCLUSION MASK
-        # if self.training:
-        #     occlusion_transient_embedding = self.occlusion_transient_embedding(camera_indices)
-        #     occlusion_transient_embedding_input = # xq somehow put uv embeddings here?? torch.cat(
-        #         [
-        #             ???
-        #         ],
-        #         dim=-1,
-        #     )
-        #     x = self.occlusion_mask_mlp(occlusion_transient_embedding_input).view(*outputs_shape, -1).to(directions)
-        #     outputs["occlusion_mask"] = self.field_head_occlusion_uncertainty(x)
 
         # transients
         if self.use_transient_embedding and self.training:
