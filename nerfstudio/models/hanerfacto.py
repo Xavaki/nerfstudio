@@ -71,6 +71,7 @@ try:
 except ImportError:
     # tinycudann module doesn't exist
     pass
+from nerfstudio.field_components.embedding import Embedding
 
 
 @dataclass
@@ -185,7 +186,8 @@ class HaNerfacto(Model):
         self.uv_position_encoding = tcnn.Encoding(n_input_dims=2, encoding_config={"otype": "Frequency", "n_frequencies": self.uv_position_encoding_num_freqs})
         
         self.occlusion_transient_embedding_dim = 128
-        self.occlusion_transient_embedding = tcnn.Embedding(self.num_images, self.occlusion_transient_embedding_dim)
+        self.occlusion_transient_embedding = Embedding(self.num_train_data, self.occlusion_transient_embedding_dim)
+        # tinycudann only supports up to 128 neurons
         occlusion_mask_mlp_channels = 256
         self.occlusion_mask_mlp = tcnn.Network(
           n_input_dims=self.occlusion_transient_embedding_dim + self.uv_position_encoding.n_output_dims,
@@ -195,7 +197,7 @@ class HaNerfacto(Model):
               "activation": "ReLU",
               "output_activation": "ReLU",
               "n_neurons": occlusion_mask_mlp_channels,
-              "n_hidden_layers": 4,
+              "n_hidden_layers": 5,
           }
         )
         self.field_head_occlusion_uncertainty = UncertaintyFieldHead(in_dim=occlusion_mask_mlp_channels, activation=nn.Sigmoid())
