@@ -71,6 +71,7 @@ except ImportError:
     # tinycudann module doesn't exist
     pass
 from nerfstudio.field_components.embedding import Embedding
+from nerfstudio.model_components.losses import hanerf_occlusion_mask_loss
 
 
 @dataclass
@@ -184,11 +185,11 @@ class HaNerfacto(Model):
         self.uv_position_encoding_num_freqs = 10
         self.uv_position_encoding = tcnn.Encoding(n_input_dims=2, encoding_config={"otype": "Frequency", "n_frequencies": self.uv_position_encoding_num_freqs})
         
-        self.occlusion_transient_embedding_dim = 128
-        self.occlusion_transient_embedding = Embedding(self.num_train_data, self.occlusion_transient_embedding_dim)
+        self.occlusion_embedding_dim = 128
+        self.occlusion_embedding = Embedding(self.num_train_data, self.occlusion_embedding_dim)
         # tinycudann only supports up to 128 neurons, so we use torch implementation instead
         W = 256 
-        n_input_dims = self.occlusion_transient_embedding_dim + self.uv_position_encoding.n_output_dims
+        n_input_dims = self.occlusion_embedding_dim + self.uv_position_encoding.n_output_dims
         self.occlusion_mask_mlp = nn.Sequential(
                                                 nn.Linear(n_input_dims, W), nn.ReLU(True),
                                                 nn.Linear(W, W), nn.ReLU(True),
@@ -251,7 +252,6 @@ class HaNerfacto(Model):
         # shaders
         self.normals_shader = NormalsShader()
 
-        # xx MODIFY LOSS
         # losses
         self.rgb_loss = MSELoss()
 
@@ -354,16 +354,19 @@ class HaNerfacto(Model):
         camera_indices = indices[:, 0]
         uv_sample = indices[:,1:3] # pixel coordinates
         uv_embedded = self.uv_position_encoding(uv_sample)
-        occlusion_transient_embedding = self.occlusion_transient_embedding(camera_indices)
-        occlusion_transient_embedding_input = torch.cat(
+        occlusion_embedding = self.occlusion_embedding(camera_indices)
+        mlp_input = torch.cat(
             [
-                occlusion_transient_embedding.view(-1, self.transient_embedding_dim),
+                occlusion_embedding.view(-1, self.occlusion_embedding_dim),
                 uv_embedded
             ],
             dim=-1
         )
-        occlusion_uncertainty_mask = self.occlusion_mask_mlp(occlusion_transient_embedding_input)
-        return self.rgb_loss(image, rgb) # xx
+        occlusion_uncertainty_mask = self.occlusion_mask_mlp(mlp_input) # (B, 1)
+        masked_rgb_loss = hanerf_occlusion_mask_loss(image, rgb, occlusion_uncertainty_mask)
+        normal_rgb_loss = self.rgb_loss(image, rgb) # for comparison
+
+        return masked_rgb_loss
 
     # xx xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
