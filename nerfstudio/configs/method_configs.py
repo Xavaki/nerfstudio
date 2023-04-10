@@ -207,7 +207,6 @@ method_configs["instant-ngp"] = TrainerConfig(
     vis="viewer",
 )
 
-
 method_configs["instant-ngp-bounded"] = TrainerConfig(
     method_name="instant-ngp-bounded",
     steps_per_eval_batch=500,
@@ -234,7 +233,6 @@ method_configs["instant-ngp-bounded"] = TrainerConfig(
     viewer=ViewerConfig(num_rays_per_chunk=64000),
     vis="viewer",
 )
-
 
 method_configs["mipnerf"] = TrainerConfig(
     method_name="mipnerf",
