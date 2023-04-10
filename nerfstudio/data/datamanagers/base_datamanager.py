@@ -479,6 +479,8 @@ class VanillaDataManager(DataManager):  # pylint: disable=abstract-method
         self.train_count += 1
         image_batch = next(self.iter_train_image_dataloader)
         assert self.train_pixel_sampler is not None
+        # xq BP batch contains pixel info?
+        # xq batch -> pixel_batch (train_pixel_sampler return variable name)
         batch = self.train_pixel_sampler.sample(image_batch)
         ray_indices = batch["indices"]
         ray_bundle = self.train_ray_generator(ray_indices)

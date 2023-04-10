@@ -62,6 +62,14 @@ from nerfstudio.model_components.shaders import NormalsShader
 from nerfstudio.models.base_model import Model, ModelConfig
 from nerfstudio.utils import colormaps
 
+# xx Ha-NeRF occlusion mask dependencies
+from nerfstudio.field_components.field_heads import UncertaintyFieldHead
+try:
+    import tinycudann as tcnn
+except ImportError:
+    # tinycudann module doesn't exist
+    pass
+
 
 @dataclass
 class HaNerfactoModelConfig(ModelConfig):
@@ -167,6 +175,30 @@ class HaNerfacto(Model):
             use_pred_normals=self.config.predict_normals,
             use_average_appearance_embedding=self.config.use_average_appearance_embedding,
         )
+
+        # xx OCCLUSION MASK
+        # xq as per hanerf implementation (see HaNerf paper section 5.1)
+        # encoding of uv/pixel coordinates (not explained in paper but present in implementation)
+        # self.uv_positional_encoding_num_freqs = 10
+        # self.uv_positional_encoding = tcnn.Encoding(n_input_dims=2, encoding_config={"otype": "Frequency", "n_frequencies": 10})
+        # self.uv_positional_encoding_out_dim = ??? # xq
+        
+        # self.occlusion_transient_embedding_dim = 128
+        # self.occlusion_transient_embedding = Embedding(self.num_images, self.occlusion_transient_embedding_dim)
+        # occlusion_mask_mlp_channels = 256 
+        # self.occlusion_mask_mlp = tcnn.Network(
+        #   n_input_dims=self.occlusion_transient_embedding_dim + self.uv_positional_encoding_out_dim
+        #   n_output_dims= occlusion_mask_mlp_channels,
+        #   network_config={
+        #       "otype": "FullyFusedMLP",
+        #       "activation": "ReLU",
+        #       "output_activation": "ReLU",
+        #       "n_neurons": occlusion_mask_mlp_channels,
+        #       "n_hidden_layers": 4,
+        #   },
+        # )
+        # self.field_head_occlusion_uncertainty = UncertaintyFieldHead(in_dim=occlusion_mask_mlp_channels, activation=nn.Sigmoid)
+        # xx xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         self.density_fns = []
         num_prop_nets = self.config.num_proposal_iterations
@@ -279,16 +311,32 @@ class HaNerfacto(Model):
         rgb = self.renderer_rgb(rgb=field_outputs[FieldHeadNames.RGB], weights=weights)
         depth = self.renderer_depth(weights=weights, ray_samples=ray_samples)
         accumulation = self.renderer_accumulation(weights=weights)
-        #xx occlusion logic goes inside the field.
-        # xx We don't need the whole image inside the field, only its index to retrieve its corresponding embedding!
-        # xq occlusion_mask = field_outputs["occlusion_mask"]
 
+        # xq what is the shape of rgb, accumulation, depth ? 
         outputs = {
             "rgb": rgb,
             "accumulation": accumulation,
             "depth": depth,
-            # xq "occlusion_mask" = occlusion_mask,
         }
+
+        # xx OCCLUSION MASK
+        # if self.training:
+        #     xq we obtain pixel coordinates via RayBundle (?)
+        #     uv_sample = get_ray_bundle_uv_coordinates(ray_bundle) # xq define
+        #     uv_embedded = self.uv_positional_encoding(uv_sample)
+        #     occlusion_transient_embedding = self.occlusion_transient_embedding(camera_indices)
+        #     occlusion_transient_embedding_input = torch.cat(
+        #         [
+        #             occlusion_transient_embedding.view(-1, self.transient_embedding_dim),
+        #             uv_embedded <-----
+        #         ],
+        #         dim=-1,
+        #     )
+        #     x = self.occlusion_mask_mlp(occlusion_transient_embedding_input).view(*outputs_shape, -1).to(directions)
+        #     outputs["occlusion_mask"] = self.field_head_occlusion_uncertainty(x)
+        # xx xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+
 
         if self.config.predict_normals:
             normals = self.renderer_normals(normals=field_outputs[FieldHeadNames.NORMALS], weights=weights)
@@ -330,7 +378,7 @@ class HaNerfacto(Model):
         loss_dict["rgb_loss"] = self.rgb_loss(image, outputs["rgb"])
         # xx hanerf occlusion loss: L_o = M_ij * (rgb loss) + lambda_o * (1 - M_ij)²
         # xx where M_ij = F_psi(p_ij, transient_embedding_i)
-        # xx so loss_dict["rgb_loss_masked"] = self.hanerf_occlusion_loss(image, outputs["rgb"], outputs["occlusion_mask"])
+        # xx so loss_dict["rgb_loss_occlusion_mask"] = self.hanerf_occlusion_loss(image, outputs["rgb"], outputs["occlusion_mask"])
         # xq rgb_loss inputs and outputs SHAPE?
         if self.training:
             loss_dict["interlevel_loss"] = self.config.interlevel_loss_mult * interlevel_loss(
