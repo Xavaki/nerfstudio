@@ -39,6 +39,7 @@ from nerfstudio.engine.callbacks import (
 from nerfstudio.field_components.field_heads import FieldHeadNames
 from nerfstudio.field_components.spatial_distortions import SceneContraction
 from nerfstudio.fields.density_fields import HashMLPDensityField
+from nerfstudio.fields.hanerfacto_field import TCNNHaNerfactoField
 from nerfstudio.fields.nerfacto_field import TCNNNerfactoField
 from nerfstudio.model_components.losses import (
     MSELoss,
@@ -154,7 +155,7 @@ class HaNerfacto(Model):
             scene_contraction = SceneContraction(order=float("inf"))
 
         # Fields
-        self.field = TCNNNerfactoField(
+        self.field = TCNNHaNerfactoField(
             self.scene_box.aabb,
             hidden_dim=self.config.hidden_dim,
             num_levels=self.config.num_levels,

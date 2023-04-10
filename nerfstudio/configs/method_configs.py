@@ -55,6 +55,7 @@ from nerfstudio.models.depth_nerfacto import DepthNerfactoModelConfig
 from nerfstudio.models.instant_ngp import InstantNGPModelConfig
 from nerfstudio.models.mipnerf import MipNerfModel
 from nerfstudio.models.nerfacto import NerfactoModelConfig
+from nerfstudio.models.hanerfacto import HaNerfactoModelConfig
 from nerfstudio.models.nerfplayer_nerfacto import NerfplayerNerfactoModelConfig
 from nerfstudio.models.nerfplayer_ngp import NerfplayerNGPModelConfig
 from nerfstudio.models.neus import NeuSModelConfig
@@ -382,10 +383,6 @@ method_configs["phototourism"] = TrainerConfig(
     vis="viewer",
 )
 
-<<<<<<< HEAD
-=======
-
->>>>>>> 716eafb2dec21c3a5e6a23b1f2350a9aea0fc662
 method_configs["hanerfacto-phototourism"] = TrainerConfig(
     method_name="phototourism",
     steps_per_eval_batch=500,
@@ -401,7 +398,7 @@ method_configs["hanerfacto-phototourism"] = TrainerConfig(
                 mode="SO3xR3", optimizer=AdamOptimizerConfig(lr=6e-4, eps=1e-8, weight_decay=1e-2)
             ),
         ),
-        model=NerfactoModelConfig(eval_num_rays_per_chunk=1 << 15),
+        model=HaNerfactoModelConfig(eval_num_rays_per_chunk=1 << 15),
     ),
     optimizers={
         "proposal_networks": {
@@ -417,7 +414,6 @@ method_configs["hanerfacto-phototourism"] = TrainerConfig(
     vis="viewer",
 )
 
-<<<<<<< HEAD
 method_configs["vanilla-nerf-phototourism"] = TrainerConfig(
     method_name="vanilla-nerf-phototourism",
     steps_per_eval_batch=500,
@@ -448,9 +444,7 @@ method_configs["vanilla-nerf-phototourism"] = TrainerConfig(
     viewer=ViewerConfig(num_rays_per_chunk=1 << 15),
     vis="viewer",
 )
-=======
 
->>>>>>> 716eafb2dec21c3a5e6a23b1f2350a9aea0fc662
 
 method_configs["nerfplayer-nerfacto"] = TrainerConfig(
     method_name="nerfplayer-nerfacto",

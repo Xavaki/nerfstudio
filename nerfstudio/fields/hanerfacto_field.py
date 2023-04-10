@@ -55,7 +55,7 @@ except ImportError:
     pass
 
 
-class TCNNNerfactoField(Field):
+class TCNNHaNerfactoField(Field):
     """Compound Field that uses TCNN
 
     Args:
@@ -450,4 +450,4 @@ class TorchNerfactoField(Field):
         return outputs
 
 
-field_implementation_to_class: Dict[str, Field] = {"tcnn": TCNNNerfactoField, "torch": TorchNerfactoField}
+field_implementation_to_class: Dict[str, Field] = {"tcnn": TCNNHaNerfactoField, "torch": TorchNerfactoField}
