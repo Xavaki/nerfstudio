@@ -260,10 +260,12 @@ class HaNerfacto(Model):
         self.ssim = structural_similarity_index_measure
         self.lpips = LearnedPerceptualImagePatchSimilarity(normalize=True)
 
+    # xq only the parameters specified here are optimized??
     def get_param_groups(self) -> Dict[str, List[Parameter]]:
         param_groups = {}
         param_groups["proposal_networks"] = list(self.proposal_networks.parameters())
         param_groups["fields"] = list(self.field.parameters())
+        param_groups["losses"] = list(self.uv_position_encoding.parameters()) + list(self.occlusion_mask_mlp.parameters())
         return param_groups
 
     def get_training_callbacks(

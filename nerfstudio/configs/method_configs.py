@@ -382,7 +382,7 @@ method_configs["phototourism"] = TrainerConfig(
 )
 
 method_configs["hanerfacto-phototourism"] = TrainerConfig(
-    method_name="phototourism",
+    method_name="hanerfacto-phototourism",
     steps_per_eval_batch=500,
     steps_per_save=2000,
     max_num_iterations=30000,

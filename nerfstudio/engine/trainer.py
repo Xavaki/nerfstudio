@@ -187,6 +187,7 @@ class Trainer:
         camera_optimizer_config = self.config.pipeline.datamanager.camera_optimizer
         if camera_optimizer_config is not None and camera_optimizer_config.mode != "off":
             assert camera_optimizer_config.param_group not in optimizer_config
+            # xq check torch optimizer syntax
             optimizer_config[camera_optimizer_config.param_group] = {
                 "optimizer": camera_optimizer_config.optimizer,
                 "scheduler": camera_optimizer_config.scheduler,
