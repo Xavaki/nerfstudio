@@ -144,6 +144,12 @@ class HaNerfactoModelConfig(ModelConfig):
     """Whether to disable scene contraction or not."""
 
     # hanerf parameters
+    hanerf_loss_color_mult: float = 0.5
+    """Hanerf occlusion mask loss color term multiplier"""
+    hanerf_loss_mask_size_delta: float = 0.006
+    """Hanerf occlusion mask loss mask size delta"""
+    hanerf_loss_mask_digit_delta: float = 0.001
+    "Hanerf occlusion mask loss mask digit delta"
 
 
 class HaNerfacto(Model):
@@ -365,8 +371,9 @@ class HaNerfacto(Model):
             dim=-1
         )
         occlusion_uncertainty_mask = self.occlusion_mask_mlp(mlp_input) # (B, 1)
-        masked_rgb_loss = hanerf_occlusion_mask_loss(image, rgb, occlusion_uncertainty_mask)
-        normal_rgb_loss = self.rgb_loss(image, rgb) # for comparison
+        color, mask_size, mask_digit = hanerf_occlusion_mask_loss(image, rgb, occlusion_uncertainty_mask)
+        masked_rgb_loss = self.config.hanerf_loss_color_mult * color + self.config.hanerf_loss_mask_size_delta * mask_size + self.config.hanerf_loss_mask_digit_delta * mask_digit
+        # normal_rgb_loss = self.rgb_loss(image, rgb) # for comparison
 
         return masked_rgb_loss
 
@@ -376,8 +383,9 @@ class HaNerfacto(Model):
         loss_dict = {}
         image = batch["image"].to(self.device)
         indices = batch["indices"].to(self.device)
-        loss_dict["rgb_loss"] = self.get_hanerf_occlusion_loss(image, indices, outputs["rgb"])
+        loss_dict["rgb_loss"] = self.rgb_loss(image, outputs["rgb"])
         if self.training:
+            loss_dict["rgb_loss"] = self.get_hanerf_occlusion_loss(image, indices, outputs["rgb"])
             loss_dict["interlevel_loss"] = self.config.interlevel_loss_mult * interlevel_loss(
                 outputs["weights_list"], outputs["ray_samples_list"]
             )

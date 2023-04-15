@@ -407,6 +407,10 @@ method_configs["hanerfacto-phototourism"] = TrainerConfig(
             "optimizer": AdamOptimizerConfig(lr=1e-2, eps=1e-15),
             "scheduler": None,
         },
+        "losses": {
+            "optimizer": AdamOptimizerConfig(lr=1e-5, eps=1e-15),
+            "scheduler": None,
+        },
     },
     viewer=ViewerConfig(num_rays_per_chunk=1 << 15),
     vis="viewer",
