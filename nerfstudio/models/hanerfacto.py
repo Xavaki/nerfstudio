@@ -378,7 +378,8 @@ class HaNerfacto(Model):
                         unraveled_mask.append(unraveled_chunk_mask)
 
                     unraveled_mask = torch.cat(unraveled_mask, dim=0)
-                    mask = unraveled_mask.reshape((height, width)).cpu().numpy()
+                    mask = unraveled_mask.reshape((height, width)).cpu().numpy() * 255
+                    mask = mask.astype(np.uint8)
                     pil_mask = Image.fromarray(mask)
                     mask_save_path = debug_image_dir / f"{step}.jpg"
                     pil_mask.save(mask_save_path, 'JPEG')
