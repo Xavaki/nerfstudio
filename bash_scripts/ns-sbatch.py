@@ -3,6 +3,11 @@ import os
 import subprocess
 from pathlib import Path
 
+import pprint
+
+import calendar
+import time
+
 """
 Helper script to handle sbatch script calling. 
 All input logic is defineed and processed here:
@@ -17,61 +22,74 @@ Configurable arguments list:
     commands/jobs to call
 """
 
-def main(mode):
-    nerfstudio_root = Path('/homedtic/xpavon/nerfstudio_root')
+def generate_sbatch_script_for_command(job_session_id, command, command_n):
+    sbatch_file_content = f"""#!/usr/bin/bash
+#SBATCH -J {command_n}_{job_session_id}
+#SBATCH -p high
+#SBATCH -N 1
+#SBATCH -n 8
+#SBATCH -c 8
+#SBATCH --chdir=/homedtic/xpavon/nerfstudio_root/nerfstudio/bash_scripts/{job_session_id}
+#SBATCH --gres=gpu:{1}
+#SBATCH --mem-per-cpu=8G
+#SBATCH --output=./run_outputs/{command_n}-%x-%J.out
+#SBATCH --error=./run_outputs/{command_n}-%x-%J.out
 
-    # prefixes and templates (trailing whitespaces)
-    singularity_exec_prefix = "singularity exec --nv /homedtic/xpavon/nerfstudio_root/nerfstudio_0.1.19.sif "
-    nerfstudio_root_prefix = singularity_exec_prefix + "/homedtic/xpavon/nerfstudio_root/ "
-    nerfstudio_train_script_prefix = nerfstudio_root_prefix + "train.py "
-    hanerfacto_phototourism_train_script_prefix = nerfstudio_train_script_prefix + "hanerfacto-phototourism --viewer.start-train False"
+# Execute the command for the current task
+{command}
+    """
+    return sbatch_file_content
+
+
+# prefixes and templates (trailing whitespaces)
+singularity_exec_prefix = "singularity exec --nv /homedtic/xpavon/nerfstudio_root/nerfstudio_0.1.19.sif "
+nerfstudio_root_prefix = singularity_exec_prefix + "/homedtic/xpavon/nerfstudio_root/ "
+nerfstudio_train_script_prefix = nerfstudio_root_prefix + "train.py "
+hanerfacto_phototourism_train_script_prefix = nerfstudio_train_script_prefix + "hanerfacto-phototourism --viewer.start-train False"
+
+def main(mode):
+    
+    timestamp = calendar.timegm(time.localtime())
+    JOB_SESSION_NAME = "testss"
+    JOB_SESSION_ID = JOB_SESSION_NAME + "-" + str(timestamp)
+    NERFSTUDIO_ROOT = Path('/homedtic/xpavon/nerfstudio_root')
+    JOB_SESSION_DIR = NERFSTUDIO_ROOT / "bash_scripts" / JOB_SESSION_ID
 
     commands = [
         hanerfacto_phototourism_train_script_prefix + "--data blablabla",
         hanerfacto_phototourism_train_script_prefix + "--data lelele",
     ]
-    commands = [f'"{t}"' for t in commands]
 
-    job_name = "test_script"
-    job_name = "_".join(job_name.split(" "))
+    assert len(commands) != 0, "no commands to run!"
 
-    num_gpus=0
+    # JOB_SESSION_DIR.mkdir()
+    # RUN_OUTPUTS_DIR = JOB_SESSION_DIR / "run_outputs"
+    # RUN_OUTPUTS_DIR.mkdir()
 
-    sbatch_file_content = f"""#!/usr/bin/bash
-#SBATCH -J {job_name}
-#SBATCH -p high
-#SBATCH -N 1
-#SBATCH -n 8
-#SBATCH -c 8
-#SBATCH --chdir=/homedtic/xpavon/nerfstudio_root/nerfstudio
-#SBATCH --gres=gpu:{num_gpus}
-#SBATCH --mem-per-cpu=8G
-#SBATCH --output=./run_outputs/${{SLURM_JOB_ID}}_${{SLURM_JOB_NAME}}/%x-%A-%a.out
-#SBATCH --error=./run_outputs/${{SLURM_JOB_ID}}_${{SLURM_JOB_NAME}}/%x-%A-%a.out
+    sbatch_filenames = []
+    sbatch_filecontents = []
+    for i, command in enumerate(commands):
+        current_sbatch_filename = (JOB_SESSION_DIR / f"{JOB_SESSION_NAME}_{i}").with_suffix('.bash')
+        sbatch_filenames.append(current_sbatch_filename)
+        if i != len(commands) - 1:
+            next_sbatch_filename = (JOB_SESSION_DIR / f"{JOB_SESSION_NAME}_{i+1}").with_suffix('.bash')
+            command += f" && sbatch {next_sbatch_filename}"
+        
+        filecontent = generate_sbatch_script_for_command(JOB_SESSION_ID, command, i)
+        sbatch_filecontents.append(filecontent)
 
-#SBATCH --array=0-{len(commands)-1}:1
 
-mkdir -p /homedtic/xpavon/nerfstudio_root/nerfstudio/run_outputs/${{SLURM_JOB_ID}}_${{SLURM_JOB_NAME}}
-
-commands_array={f'({(" ").join(commands)})'}
-
-command=${{commands_array[${{SLURM_ARRAY_TASK_ID}}]}}
-
-# Execute the command for the current task
-eval $command
-    """
-    sbatch_filename= nerfstudio_root / 'nerfstudio/bash_scripts' / 'SBATCH_array_prototype.sh'
+    if mode == "print":
+        pprint.pprint(sbatch_filenames)
+        pprint.pprint(sbatch_filecontents)
+        return
+    
+    for fname, fcontent in zip(sbatch_filenames, sbatch_filecontents):
+        with open(fname, 'w') as file:
+            file.write(fcontent)
 
     if mode=="exec":
-        with open(sbatch_filename, 'w') as file:
-            file.write(sbatch_file_content)
-        subprocess.call(['sbatch', sbatch_filename])
-    elif mode=="write":
-        with open(sbatch_filename, 'w') as file:
-            file.write(sbatch_file_content)
-    else:
-        print(sbatch_file_content)
-
+        subprocess.call(['sbatch', sbatch_filenames[0]])
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
