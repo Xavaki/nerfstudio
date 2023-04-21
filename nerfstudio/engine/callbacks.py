@@ -37,6 +37,8 @@ class TrainingCallbackAttributes:
     """gradient scalers"""
     pipeline: Optional[InitVar]
     """reference to training pipeline"""
+    base_dir: Optional[InitVar]
+    """reference to base output dir"""
 
 
 class TrainingCallbackLocation(Enum):

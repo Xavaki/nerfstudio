@@ -48,20 +48,18 @@ def hanerf_occlusion_mask_loss(targets, rgb, mask):
         _type_: hanerf loss
     """
 
-    color_term = 0.5 * ((1 - mask) * (rgb - targets)**2).mean()
+    color_term = ((1 - mask) * (rgb - targets)**2).mean()
 
     # xx paper section 4.2 -> this balances color term, by preventing mask value to simply be 1 for all pixels 
     # xq in original implementation, size_delta decays as a function of training step and maskrs_k parameter!! 
-    size_delta = 0.06 # default 0.006
     reg_term_size = torch.pow(mask, 2)
-    reg_term_size = torch.mean(reg_term_size) * size_delta
+    reg_term_size = torch.mean(reg_term_size)
 
-    digit_delta = 0.001 # default = 0.001
     focus_epsilon = 0.02
     # xx this is not in the paper
     # xx I think it encourages the mask probability/uncertainty to be as far away from 0.5 as possible, as we would otherwise obtain a homogeneous mask
     reg_term_digit = 1 / ((mask - 0.5)**2 + focus_epsilon)
-    reg_term_digit = torch.mean(reg_term_digit) * digit_delta
+    reg_term_digit = torch.mean(reg_term_digit)
 
     return color_term, reg_term_size, reg_term_digit
 

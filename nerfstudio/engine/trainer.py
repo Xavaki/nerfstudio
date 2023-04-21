@@ -162,6 +162,7 @@ class Trainer:
                 optimizers=self.optimizers,  # type: ignore
                 grad_scaler=self.grad_scaler,  # type: ignore
                 pipeline=self.pipeline,  # type: ignore
+                base_dir=self.base_dir, # type: ignore
             )
         )
 
