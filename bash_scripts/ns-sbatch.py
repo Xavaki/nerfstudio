@@ -24,36 +24,40 @@ Configurable arguments list:
 
 def generate_sbatch_script_for_command(job_session_id, command, command_n):
     sbatch_file_content = f"""#!/usr/bin/bash
-#SBATCH -J {command_n}_{job_session_id}
+#SBATCH -J {command_n}-{job_session_id}
 #SBATCH -p high
 #SBATCH -N 1
 #SBATCH -n 8
 #SBATCH -c 8
-#SBATCH --chdir=/homedtic/xpavon/nerfstudio_root/nerfstudio/bash_scripts/{job_session_id}
+#SBATCH --chdir=/homedtic/xpavon/nerfstudio_root
 #SBATCH --gres=gpu:{1}
 #SBATCH --mem-per-cpu=8G
-#SBATCH --output=./run_outputs/{command_n}-%x-%J.out
-#SBATCH --error=./run_outputs/{command_n}-%x-%J.out
+#SBATCH --output=./nerfstudio/bash_scripts/{job_session_id}/run_outputs/%x-%J.out
+#SBATCH --error=./nerfstudio/bash_scripts/{job_session_id}/run_outputs/%x-%J.out
 
+echo "command executed:"
+echo "{command}"
+echo -------------------
+echo -------------------
 # Execute the command for the current task
 {command}
     """
     return sbatch_file_content
 
+timestamp = calendar.timegm(time.localtime())
+JOB_SESSION_NAME = "testss"
+JOB_SESSION_ID = JOB_SESSION_NAME + "-" + str(timestamp)
+NERFSTUDIO_ROOT = Path('/homedtic/xpavon/nerfstudio_root')
+JOB_SESSION_DIR = NERFSTUDIO_ROOT / "nerfstudio/bash_scripts" / JOB_SESSION_ID
 
-# prefixes and templates (trailing whitespaces)
+# prefixes and templates 
 singularity_exec_prefix = "singularity exec --nv /homedtic/xpavon/nerfstudio_root/nerfstudio_0.1.19.sif "
-nerfstudio_root_prefix = singularity_exec_prefix + "/homedtic/xpavon/nerfstudio_root/ "
-nerfstudio_train_script_prefix = nerfstudio_root_prefix + "train.py "
-hanerfacto_phototourism_train_script_prefix = nerfstudio_train_script_prefix + "hanerfacto-phototourism --viewer.start-train False"
+nerfstudio_exec_script_prefix = singularity_exec_prefix + "python3 /homedtic/xpavon/nerfstudio_root/nerfstudio/scripts/"
+nerfstudio_train_script_prefix = nerfstudio_exec_script_prefix + "train.py "
+hanerfacto_phototourism_train_script_prefix = nerfstudio_train_script_prefix + f"hanerfacto-phototourism --viewer.start-train False --experiment-name {JOB_SESSION_ID} "
 
 def main(mode):
     
-    timestamp = calendar.timegm(time.localtime())
-    JOB_SESSION_NAME = "testss"
-    JOB_SESSION_ID = JOB_SESSION_NAME + "-" + str(timestamp)
-    NERFSTUDIO_ROOT = Path('/homedtic/xpavon/nerfstudio_root')
-    JOB_SESSION_DIR = NERFSTUDIO_ROOT / "bash_scripts" / JOB_SESSION_ID
 
     commands = [
         hanerfacto_phototourism_train_script_prefix + "--data blablabla",
@@ -62,18 +66,19 @@ def main(mode):
 
     assert len(commands) != 0, "no commands to run!"
 
-    # JOB_SESSION_DIR.mkdir()
-    # RUN_OUTPUTS_DIR = JOB_SESSION_DIR / "run_outputs"
-    # RUN_OUTPUTS_DIR.mkdir()
+    if mode != "print":
+        JOB_SESSION_DIR.mkdir()
+        RUN_OUTPUTS_DIR = JOB_SESSION_DIR / "run_outputs"
+        RUN_OUTPUTS_DIR.mkdir()
 
     sbatch_filenames = []
     sbatch_filecontents = []
     for i, command in enumerate(commands):
-        current_sbatch_filename = (JOB_SESSION_DIR / f"{JOB_SESSION_NAME}_{i}").with_suffix('.bash')
+        current_sbatch_filename = (JOB_SESSION_DIR / f"{i}-{JOB_SESSION_NAME}").with_suffix('.bash')
         sbatch_filenames.append(current_sbatch_filename)
         if i != len(commands) - 1:
-            next_sbatch_filename = (JOB_SESSION_DIR / f"{JOB_SESSION_NAME}_{i+1}").with_suffix('.bash')
-            command += f" && sbatch {next_sbatch_filename}"
+            next_sbatch_filename = (JOB_SESSION_DIR / f"{i+1}-{JOB_SESSION_NAME}").with_suffix('.bash')
+            command += f" ; sbatch {next_sbatch_filename}"
         
         filecontent = generate_sbatch_script_for_command(JOB_SESSION_ID, command, i)
         sbatch_filecontents.append(filecontent)
