@@ -20,6 +20,7 @@ from __future__ import annotations
 
 import sys
 import debugpy
+import json
 
 import shutil
 import math
@@ -163,6 +164,8 @@ class HaNerfactoModelConfig(ModelConfig):
     "Whether to save predicted rgbs for a sample of train images in hanerf_debug folder"
     save_debug_hanerf_occlusion_mask: bool = True
     "Whether to save occlusion masks for a sample of train images in hanerf_debug folder"
+    save_sample_count: bool = True
+    "Whether to save image and pixel count info"
 
 
 
@@ -201,6 +204,7 @@ class HaNerfacto(Model):
 
         # xx OCCLUSION MASK
         # xx as per hanerf implementation (see HaNerf paper section 5.1)
+        self.debug_img_idxs = (0, 1, 2, 3, 4)
         # encoding of uv/pixel coordinates (not explained in paper but present in implementation)
         self.uv_position_encoding_num_freqs = 10
         self.uv_position_encoding = tcnn.Encoding(n_input_dims=2, encoding_config={"otype": "Frequency", "n_frequencies": self.uv_position_encoding_num_freqs})
@@ -319,14 +323,32 @@ class HaNerfacto(Model):
                 )
             )
 
-        
-        n_debug_hanerf_images = 5
+
+        def setup_debug_sample_count(step):
+            sample_count_dict = {}
+            train_dataset_ref = training_callback_attributes.pipeline.datamanager.train_dataset
+            for i in self.debug_img_idxs:
+                image = train_dataset_ref[i]['image']
+                height, width, _ = image.shape
+                sample_count_dict[i] = {"info_dict" : { "img_sample_count" : 0, "prop_pixels_sampled" : 0 }, "pixel_count_img" : torch.zeros((height, width))}
+            self.debug_sample_count_dict = sample_count_dict
+
+        if self.config.save_sample_count:
+            callbacks.append(
+                TrainingCallback(
+                    where_to_run=[TrainingCallbackLocation.BEFORE_TRAIN_ITERATION],
+                    iters=(0,),
+                    func=setup_debug_sample_count,
+                )
+            )
+            
+        @torch.no_grad()
         def setup_debug_hanerf_occlusion_mask_dir(step):
             out_dir = training_callback_attributes.base_dir
             debug_dir = out_dir / "hanerf_debug"
             debug_dir.mkdir()
             train_dataset_ref = training_callback_attributes.pipeline.datamanager.train_dataset
-            for i in range(n_debug_hanerf_images):
+            for i in self.debug_img_idxs:
                 imagei_path = train_dataset_ref.image_filenames[i]
                 imagei_stem = imagei_path.stem
 
@@ -335,7 +357,8 @@ class HaNerfacto(Model):
 
                 shutil.copyfile(imagei_path, debug_imagei_dir / "train_image.jpg")
 
-        if self.config.save_debug_predicted_images or self.config.save_debug_hanerf_occlusion_mask:
+        set_debug_dir = self.config.save_debug_predicted_images or self.config.save_debug_hanerf_occlusion_mask or self.config.save_sample_count
+        if set_debug_dir:
             callbacks.append(
                 TrainingCallback(
                     where_to_run=[TrainingCallbackLocation.BEFORE_TRAIN_ITERATION],
@@ -344,6 +367,39 @@ class HaNerfacto(Model):
                 )
             )
 
+        
+        @torch.no_grad()
+        def save_sample_count(step):
+            out_dir = training_callback_attributes.base_dir
+            debug_dir = out_dir / "hanerf_debug"
+            train_dataset_ref = training_callback_attributes.pipeline.datamanager.train_dataset
+            for i in self.debug_img_idxs:
+                image_stem = train_dataset_ref.image_filenames[i].stem
+                debug_image_dir = debug_dir / image_stem
+
+                pixel_count_img = self.debug_sample_count_dict[i]["pixel_count_img"]
+                pixel_count_img = pixel_count_img / pixel_count_img.max() # xx check .max()
+                save_pixel_count_img = (pixel_count_img.cpu().numpy()*255).astype(np.uint8)
+                save_pixel_count_img = Image.fromarray(save_pixel_count_img)
+                save_path = debug_image_dir / f"{step}_pixel_count.jpg"
+                save_pixel_count_img.save(save_path, 'JPEG')
+
+                sample_count_dict = self.debug_sample_count_dict[i]["info_dict"]
+                save_path = debug_image_dir / f"{step}_sample_count.json"
+                with open(save_path, "w") as f:
+                    json.dump(sample_count_dict, f)
+
+                
+        if self.config.save_sample_count:  
+            callbacks.append(
+                    TrainingCallback(
+                        where_to_run=[TrainingCallbackLocation.AFTER_TRAIN_ITERATION],
+                        update_every_num_iters=5000, # xx should depend on total number of iterations
+                        func=save_sample_count,
+                    )
+                )
+
+        @torch.no_grad()
         def get_reshaped_image_cords(image):
             height, width, _ = image.shape
             # create tensor of row indices and column indices
@@ -359,14 +415,14 @@ class HaNerfacto(Model):
             # reshape pixel coordinates tensor -> (h*w, 2)
             reshaped_image_coords = image_coords.reshape((height*width, 2))
             return reshaped_image_coords
-
+        
         @torch.no_grad()
         def debug_image_predicted(step):
             out_dir = training_callback_attributes.base_dir
             debug_dir = out_dir / "hanerf_debug"
             ray_generator_ref = training_callback_attributes.pipeline.datamanager.train_ray_generator
             train_dataset_ref = training_callback_attributes.pipeline.datamanager.train_dataset
-            for i in range(n_debug_hanerf_images):
+            for i in self.debug_img_idxs:
                 image_stem = train_dataset_ref.image_filenames[i].stem
                 debug_image_dir = debug_dir / image_stem
 
@@ -411,7 +467,7 @@ class HaNerfacto(Model):
             out_dir = training_callback_attributes.base_dir
             debug_dir = out_dir / "hanerf_debug"
             train_dataset_ref = training_callback_attributes.pipeline.datamanager.train_dataset
-            for i in range(n_debug_hanerf_images):
+            for i in self.debug_img_idxs:
                 image_stem = train_dataset_ref.image_filenames[i].stem
                 debug_image_dir = debug_dir / image_stem
 
@@ -511,9 +567,6 @@ class HaNerfacto(Model):
     # xx OCCLUSION MASK
     def get_hanerf_occlusion_loss(self, image, indices, rgb):
         camera_indices = indices[:, 0]
-        if sys.gettrace() is not None and 0 in camera_indices:
-            # debugger active
-            debugpy.breakpoint()
 
         uv_sample = indices[:,1:3] # pixel coordinates
         uv_embedded = self.uv_position_encoding(uv_sample)
@@ -531,6 +584,22 @@ class HaNerfacto(Model):
         # normal_rgb_loss = self.rgb_loss(image, rgb) # for comparison
 
         return masked_rgb_loss
+    
+    def update_sample_count(self, indices):
+        camera_indices = indices[:, 0]
+        pixel_coords = indices[:,1:3] # pixel coordinates
+        for i in self.debug_img_idxs:
+            if i in camera_indices:
+                img_pixel_coords = pixel_coords[torch.where(camera_indices == i)]
+                pixel_count_img = self.debug_sample_count_dict[i]["pixel_count_img"]
+                pixel_count_img[img_pixel_coords[:,0], img_pixel_coords[:,1]] += 1
+                self.debug_sample_count_dict[i]["pixel_count_img"] = pixel_count_img
+                
+                sample_count_dict = self.debug_sample_count_dict[i]["info_dict"]
+                sample_count_dict["img_sample_count"] += 1
+                sample_count_dict["prop_pixels_sampled"] = len(torch.where(pixel_count_img != 0)) / pixel_count_img.numel()
+                self.debug_sample_count_dict[i]["info_dict"] = sample_count_dict
+                
 
     # xx xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
@@ -538,6 +607,10 @@ class HaNerfacto(Model):
         loss_dict = {}
         image = batch["image"].to(self.device)
         indices = batch["indices"].to(self.device)
+
+        if self.config.save_sample_count:
+            self.update_sample_count(indices)
+
         loss_dict["rgb_loss"] = self.rgb_loss(image, outputs["rgb"])
         if self.training:
             if self.config.enable_hanerf_loss:
