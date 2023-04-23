@@ -13,6 +13,8 @@ from rich.console import Console
 
 from nerfstudio.utils.eval_utils import eval_setup
 
+import sys
+
 CONSOLE = Console(width=120)
 
 
@@ -50,6 +52,16 @@ def entrypoint():
 
 
 if __name__ == "__main__":
+    if __name__ == "__main__":
+        print("##################### DEV #####################")
+        if 'debugme' in sys.argv:
+            import debugpy
+            sys.argv.remove('debugme')
+            debugpy.listen(4565)
+            print("Waiting for debugger attach")
+            debugpy.wait_for_client()
+
+    
     entrypoint()
 
 # For sphinx docs

@@ -16,8 +16,10 @@
 NeRF implementation that combines many recent advancements.
 + Ha-NeRF occlusion handling by xavaki
 """
-
 from __future__ import annotations
+
+import sys
+import debugpy
 
 import shutil
 import math
@@ -155,6 +157,13 @@ class HaNerfactoModelConfig(ModelConfig):
     """Hanerf occlusion mask loss mask size delta"""
     hanerf_loss_mask_digit_delta: float = 0.001
     "Hanerf occlusion mask loss mask digit delta"
+    enable_hanerf_loss: bool = True
+    "Whether to predict hanerf occlusion mask or not. For debug purposes"
+    save_debug_predicted_images: bool = True
+    "Whether to save predicted rgbs for a sample of train images in hanerf_debug folder"
+    save_debug_hanerf_occlusion_mask: bool = True
+    "Whether to save occlusion masks for a sample of train images in hanerf_debug folder"
+
 
 
 class HaNerfacto(Model):
@@ -276,7 +285,8 @@ class HaNerfacto(Model):
         param_groups = {}
         param_groups["proposal_networks"] = list(self.proposal_networks.parameters())
         param_groups["fields"] = list(self.field.parameters())
-        param_groups["losses"] = list(self.occlusion_mask_mlp.parameters())
+        if self.config.enable_hanerf_loss:
+            param_groups["losses"] = list(self.occlusion_mask_mlp.parameters())
         return param_groups
 
     def get_training_callbacks(
@@ -325,73 +335,124 @@ class HaNerfacto(Model):
 
                 shutil.copyfile(imagei_path, debug_imagei_dir / "train_image.jpg")
 
-        callbacks.append(
-            TrainingCallback(
-                where_to_run=[TrainingCallbackLocation.BEFORE_TRAIN_ITERATION],
-                iters=(0,),
-                func=setup_debug_hanerf_occlusion_mask_dir,
-            )
-        )
-
-        def debug_hanerf_occlusion_mask(step):
-            with torch.no_grad():
-                out_dir = training_callback_attributes.base_dir
-                debug_dir = out_dir / "hanerf_debug"
-                train_dataset_ref = training_callback_attributes.pipeline.datamanager.train_dataset
-                for i in range(n_debug_hanerf_images):
-                    image_stem = train_dataset_ref.image_filenames[i].stem
-                    debug_image_dir = debug_dir / image_stem
-
-                    image = train_dataset_ref[i]['image']
-                    image_occlusion_embedding = self.occlusion_embedding(torch.tensor([i]).to(self.device))
-
-                    # fabricate pixel coordinates tensor
-                    height, width, _ = image.shape
-
-                    # create tensor of row indices and column indices
-                    row_indices = torch.arange(height)
-                    col_indices = torch.arange(width)
-
-                    # create meshgrid of row and column indices
-                    x_coords, y_coords = torch.meshgrid(col_indices, row_indices)
-
-                    # stack x and y coordinates into a single tensor
-                    image_coords = torch.stack((x_coords, y_coords), dim=-1)
-
-                    # reshape pixel coordinates tensor -> (h*w, 2)
-                    reshaped_image_coords = image_coords.reshape((height*width, 2))
-                    num_cords = reshaped_image_coords.shape[0]
-                    batch_size = min(4096, num_cords)
-                    unraveled_mask = []
-                    for cord_chunk_n in range(math.ceil(num_cords / batch_size)):
-                        low_idx = cord_chunk_n * batch_size
-                        up_idx = min(cord_chunk_n*batch_size + batch_size, num_cords)
-                        cord_chunk = reshaped_image_coords[low_idx : up_idx]
-                        chunk_size = cord_chunk.shape[0]
-                        # uv_encoded pixel coordinates tensor
-                        encoded_cord_chunk = self.uv_position_encoding(cord_chunk)
-                        # repated image occlusion embedding
-                        rep_image_occlusion_embedding = image_occlusion_embedding.repeat(chunk_size, 1)
-
-                        occlusion_mlp_input = torch.cat((encoded_cord_chunk, rep_image_occlusion_embedding), dim=-1)
-                        unraveled_chunk_mask = self.occlusion_mask_mlp(occlusion_mlp_input)
-                        unraveled_mask.append(unraveled_chunk_mask)
-
-                    unraveled_mask = torch.cat(unraveled_mask, dim=0)
-                    mask = unraveled_mask.reshape((height, width)).cpu().numpy() * 255
-                    mask = mask.astype(np.uint8)
-                    pil_mask = Image.fromarray(mask)
-                    mask_save_path = debug_image_dir / f"{step}.jpg"
-                    pil_mask.save(mask_save_path, 'JPEG')
-
-            x = 2
-        callbacks.append(
+        if self.config.save_debug_predicted_images or self.config.save_debug_hanerf_occlusion_mask:
+            callbacks.append(
                 TrainingCallback(
-                    where_to_run=[TrainingCallbackLocation.AFTER_TRAIN_ITERATION],
-                    update_every_num_iters=5000, # xx should depend on total number of iterations
-                    func=debug_hanerf_occlusion_mask,
+                    where_to_run=[TrainingCallbackLocation.BEFORE_TRAIN_ITERATION],
+                    iters=(0,),
+                    func=setup_debug_hanerf_occlusion_mask_dir,
                 )
             )
+
+        def get_reshaped_image_cords(image):
+            height, width, _ = image.shape
+            # create tensor of row indices and column indices
+            row_indices = torch.arange(height)
+            col_indices = torch.arange(width)
+
+            # create meshgrid of row and column indices
+            y_coords, x_coords = torch.meshgrid(row_indices, col_indices)
+
+            # stack x and y coordinates into a single tensor
+            image_coords = torch.stack((y_coords, x_coords), dim=-1)
+
+            # reshape pixel coordinates tensor -> (h*w, 2)
+            reshaped_image_coords = image_coords.reshape((height*width, 2))
+            return reshaped_image_coords
+
+        @torch.no_grad()
+        def debug_image_predicted(step):
+            out_dir = training_callback_attributes.base_dir
+            debug_dir = out_dir / "hanerf_debug"
+            ray_generator_ref = training_callback_attributes.pipeline.datamanager.train_ray_generator
+            train_dataset_ref = training_callback_attributes.pipeline.datamanager.train_dataset
+            for i in range(n_debug_hanerf_images):
+                image_stem = train_dataset_ref.image_filenames[i].stem
+                debug_image_dir = debug_dir / image_stem
+
+                image = train_dataset_ref[i]['image']
+                height, width, _ = image.shape
+                reshaped_image_coords = get_reshaped_image_cords(image)
+                total_num_coords = reshaped_image_coords.shape[0]
+                camera_indices = torch.ones((total_num_coords,1)) * i
+
+                ray_indices = torch.cat((camera_indices, reshaped_image_coords), dim=-1).long()
+                ray_bundle = ray_generator_ref(ray_indices)
+                total_num_rays = total_num_coords
+                rays_per_chunk = min(4096, total_num_rays)
+                unraveled_all_rgbs = []
+                for ray_chunk_n in range(math.ceil(total_num_rays / rays_per_chunk)):
+                    low_idx = ray_chunk_n * rays_per_chunk
+                    up_idx = min(ray_chunk_n*rays_per_chunk + rays_per_chunk, total_num_rays)
+                    ray_chunk = ray_bundle[low_idx : up_idx]
+                    chunk_size = ray_chunk.shape[0]
+                    chunk_outputs = self.forward(ray_chunk)
+                    chunk_rgbs = chunk_outputs['rgb']
+                    unraveled_all_rgbs.append(chunk_rgbs)
+
+                unraveled_all_rgbs = torch.cat(unraveled_all_rgbs, dim=0)
+                rgbs = unraveled_all_rgbs.reshape((height, width, 3)).cpu().numpy() * 255
+                rgbs = rgbs.astype(np.uint8)
+                pil_img = Image.fromarray(rgbs)
+                save_path = debug_image_dir / f"{step}_predicted.jpg"
+                pil_img.save(save_path, 'JPEG')
+                
+        if self.config.save_debug_predicted_images:  
+            callbacks.append(
+                    TrainingCallback(
+                        where_to_run=[TrainingCallbackLocation.AFTER_TRAIN_ITERATION],
+                        update_every_num_iters=5000, # xx should depend on total number of iterations
+                        func=debug_image_predicted,
+                    )
+                )
+
+        @torch.no_grad()
+        def debug_hanerf_occlusion_mask(step):
+            out_dir = training_callback_attributes.base_dir
+            debug_dir = out_dir / "hanerf_debug"
+            train_dataset_ref = training_callback_attributes.pipeline.datamanager.train_dataset
+            for i in range(n_debug_hanerf_images):
+                image_stem = train_dataset_ref.image_filenames[i].stem
+                debug_image_dir = debug_dir / image_stem
+
+                image_occlusion_embedding = self.occlusion_embedding(torch.tensor([i]).to(self.device))
+                image = train_dataset_ref[i]['image']
+                height, width, _ = image.shape
+
+                # fabricate pixel coordinates tensor
+                reshaped_image_coords = get_reshaped_image_cords(image)
+                total_num_coords = reshaped_image_coords.shape[0]
+                cords_per_chunk = min(4096, total_num_coords)
+                unraveled_mask = []
+                for cord_chunk_n in range(math.ceil(total_num_coords / cords_per_chunk)):
+                    low_idx = cord_chunk_n * cords_per_chunk
+                    up_idx = min(cord_chunk_n*cords_per_chunk + cords_per_chunk, total_num_coords)
+                    cord_chunk = reshaped_image_coords[low_idx : up_idx]
+                    chunk_size = cord_chunk.shape[0]
+                    # uv_encoded pixel coordinates tensor
+                    encoded_cord_chunk = self.uv_position_encoding(cord_chunk)
+                    # repated image occlusion embedding
+                    rep_image_occlusion_embedding = image_occlusion_embedding.repeat(chunk_size, 1)
+
+                    occlusion_mlp_input = torch.cat((encoded_cord_chunk, rep_image_occlusion_embedding), dim=-1)
+                    unraveled_chunk_mask = self.occlusion_mask_mlp(occlusion_mlp_input)
+                    unraveled_mask.append(unraveled_chunk_mask)
+
+                unraveled_mask = torch.cat(unraveled_mask, dim=0)
+                mask = unraveled_mask.reshape((height, width)).cpu().numpy() * 255
+                mask = mask.astype(np.uint8)
+                pil_mask = Image.fromarray(mask)
+                mask_save_path = debug_image_dir / f"{step}_mask.jpg"
+                pil_mask.save(mask_save_path, 'JPEG')
+        
+        if self.config.enable_hanerf_loss and self.config.save_debug_hanerf_occlusion_mask:
+            callbacks.append(
+                    TrainingCallback(
+                        where_to_run=[TrainingCallbackLocation.AFTER_TRAIN_ITERATION],
+                        update_every_num_iters=5000, # xx should depend on total number of iterations
+                        func=debug_hanerf_occlusion_mask,
+                    )
+                )
 
         return callbacks
 
@@ -450,6 +511,10 @@ class HaNerfacto(Model):
     # xx OCCLUSION MASK
     def get_hanerf_occlusion_loss(self, image, indices, rgb):
         camera_indices = indices[:, 0]
+        if sys.gettrace() is not None and 0 in camera_indices:
+            # debugger active
+            debugpy.breakpoint()
+
         uv_sample = indices[:,1:3] # pixel coordinates
         uv_embedded = self.uv_position_encoding(uv_sample)
         occlusion_embedding = self.occlusion_embedding(camera_indices)
@@ -475,7 +540,10 @@ class HaNerfacto(Model):
         indices = batch["indices"].to(self.device)
         loss_dict["rgb_loss"] = self.rgb_loss(image, outputs["rgb"])
         if self.training:
-            loss_dict["rgb_loss"] = self.get_hanerf_occlusion_loss(image, indices, outputs["rgb"])
+            if self.config.enable_hanerf_loss:
+                loss_dict["rgb_loss"] = self.get_hanerf_occlusion_loss(image, indices, outputs["rgb"])
+            else:
+                loss_dict["rgb_loss"] = self.rgb_loss(image, outputs["rgb"])
             loss_dict["interlevel_loss"] = self.config.interlevel_loss_mult * interlevel_loss(
                 outputs["weights_list"], outputs["ray_samples_list"]
             )
