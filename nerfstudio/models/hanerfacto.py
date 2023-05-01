@@ -166,6 +166,8 @@ class HaNerfactoModelConfig(ModelConfig):
     "Whether to save occlusion masks for a sample of train images in hanerf_debug folder"
     save_sample_count: bool = True
     "Whether to save image and pixel count info"
+    hanerf_debug_frequency: int = 5000 # xx should depend on total number of iterations
+    """How often to save debug information"""
 
 
 
@@ -220,6 +222,7 @@ class HaNerfacto(Model):
                                                 nn.Linear(W, W), nn.ReLU(True),
                                                 nn.Linear(W, W), nn.ReLU(True),
                                                 nn.Linear(W, 1), nn.Sigmoid())
+
         # xx xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         self.density_fns = []
@@ -323,6 +326,40 @@ class HaNerfacto(Model):
                 )
             )
 
+            
+        @torch.no_grad()
+        def setup_debug_hanerf_occlusion_mask_dir(step):
+            out_dir = training_callback_attributes.base_dir
+            debug_dir = out_dir / "hanerf_debug"
+            debug_dir.mkdir()
+            train_dataset_ref = training_callback_attributes.pipeline.datamanager.train_dataset
+            occluded_imgs_idxs = training_callback_attributes.pipeline.datamanager.dataparser.occluded_imgs_idxs
+            if occluded_imgs_idxs:
+                self.debug_img_idxs = occluded_imgs_idxs
+                
+            for i in self.debug_img_idxs:
+                imagei_path = train_dataset_ref.image_filenames[i]
+                imagei_stem = imagei_path.stem
+                imagei_name = imagei_path.name
+                debug_imagei_dir = debug_dir / imagei_stem
+                debug_imagei_dir.mkdir()
+
+                shutil.copyfile(imagei_path, debug_imagei_dir / "train_image.jpg")
+                if "occlusion" in str(imagei_path):
+                    non_occluded_imagei_path = imagei_path.parents[2] / imagei_name
+                    shutil.copyfile(non_occluded_imagei_path, debug_imagei_dir / "train_image_non_occluded.jpg")
+
+
+
+        set_debug_dir = self.config.save_debug_predicted_images or self.config.save_debug_hanerf_occlusion_mask or self.config.save_sample_count
+        if set_debug_dir:
+            callbacks.append(
+                TrainingCallback(
+                    where_to_run=[TrainingCallbackLocation.BEFORE_TRAIN_ITERATION],
+                    iters=(0,),
+                    func=setup_debug_hanerf_occlusion_mask_dir,
+                )
+            )
 
         def setup_debug_sample_count(step):
             sample_count_dict = {}
@@ -341,35 +378,11 @@ class HaNerfacto(Model):
                     func=setup_debug_sample_count,
                 )
             )
-            
-        @torch.no_grad()
-        def setup_debug_hanerf_occlusion_mask_dir(step):
-            out_dir = training_callback_attributes.base_dir
-            debug_dir = out_dir / "hanerf_debug"
-            debug_dir.mkdir()
-            train_dataset_ref = training_callback_attributes.pipeline.datamanager.train_dataset
-            for i in self.debug_img_idxs:
-                imagei_path = train_dataset_ref.image_filenames[i]
-                imagei_stem = imagei_path.stem
-
-                debug_imagei_dir = debug_dir / imagei_stem
-                debug_imagei_dir.mkdir()
-
-                shutil.copyfile(imagei_path, debug_imagei_dir / "train_image.jpg")
-
-        set_debug_dir = self.config.save_debug_predicted_images or self.config.save_debug_hanerf_occlusion_mask or self.config.save_sample_count
-        if set_debug_dir:
-            callbacks.append(
-                TrainingCallback(
-                    where_to_run=[TrainingCallbackLocation.BEFORE_TRAIN_ITERATION],
-                    iters=(0,),
-                    func=setup_debug_hanerf_occlusion_mask_dir,
-                )
-            )
 
         
         @torch.no_grad()
         def save_sample_count(step):
+            if step == 0: return
             out_dir = training_callback_attributes.base_dir
             debug_dir = out_dir / "hanerf_debug"
             train_dataset_ref = training_callback_attributes.pipeline.datamanager.train_dataset
@@ -378,7 +391,7 @@ class HaNerfacto(Model):
                 debug_image_dir = debug_dir / image_stem
 
                 pixel_count_img = self.debug_sample_count_dict[i]["pixel_count_img"]
-                pixel_count_img = pixel_count_img / pixel_count_img.max() # xx check .max()
+                pixel_count_img = pixel_count_img / pixel_count_img.max() 
                 save_pixel_count_img = (pixel_count_img.cpu().numpy()*255).astype(np.uint8)
                 save_pixel_count_img = Image.fromarray(save_pixel_count_img)
                 save_path = debug_image_dir / f"{step}_pixel_count.jpg"
@@ -394,7 +407,7 @@ class HaNerfacto(Model):
             callbacks.append(
                     TrainingCallback(
                         where_to_run=[TrainingCallbackLocation.AFTER_TRAIN_ITERATION],
-                        update_every_num_iters=5000, # xx should depend on total number of iterations
+                        update_every_num_iters=self.config.hanerf_debug_frequency,
                         func=save_sample_count,
                     )
                 )
@@ -418,6 +431,7 @@ class HaNerfacto(Model):
         
         @torch.no_grad()
         def debug_image_predicted(step):
+            if step == 0: return
             out_dir = training_callback_attributes.base_dir
             debug_dir = out_dir / "hanerf_debug"
             ray_generator_ref = training_callback_attributes.pipeline.datamanager.train_ray_generator
@@ -457,13 +471,14 @@ class HaNerfacto(Model):
             callbacks.append(
                     TrainingCallback(
                         where_to_run=[TrainingCallbackLocation.AFTER_TRAIN_ITERATION],
-                        update_every_num_iters=5000, # xx should depend on total number of iterations
+                        update_every_num_iters=self.config.hanerf_debug_frequency, 
                         func=debug_image_predicted,
                     )
                 )
 
         @torch.no_grad()
         def debug_hanerf_occlusion_mask(step):
+            if step == 0: return
             out_dir = training_callback_attributes.base_dir
             debug_dir = out_dir / "hanerf_debug"
             train_dataset_ref = training_callback_attributes.pipeline.datamanager.train_dataset
@@ -505,7 +520,7 @@ class HaNerfacto(Model):
             callbacks.append(
                     TrainingCallback(
                         where_to_run=[TrainingCallbackLocation.AFTER_TRAIN_ITERATION],
-                        update_every_num_iters=5000, # xx should depend on total number of iterations
+                        update_every_num_iters=self.config.hanerf_debug_frequency,
                         func=debug_hanerf_occlusion_mask,
                     )
                 )
@@ -597,7 +612,7 @@ class HaNerfacto(Model):
                 
                 sample_count_dict = self.debug_sample_count_dict[i]["info_dict"]
                 sample_count_dict["img_sample_count"] += 1
-                sample_count_dict["prop_pixels_sampled"] = len(torch.where(pixel_count_img != 0)) / pixel_count_img.numel()
+                sample_count_dict["prop_pixels_sampled"] = pixel_count_img.count_nonzero().item() / (pixel_count_img.shape[0]*pixel_count_img.shape[1])
                 self.debug_sample_count_dict[i]["info_dict"] = sample_count_dict
                 
 

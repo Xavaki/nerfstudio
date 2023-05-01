@@ -22,16 +22,15 @@ Configurable arguments list:
     commands/jobs to call
 """
 
-def generate_sbatch_script_for_command(job_session_id, command, command_n):
+def generate_sbatch_script_for_command(job_session_id, command, command_n, c=8, num_gpus=1, m=8):
     sbatch_file_content = f"""#!/usr/bin/bash
 #SBATCH -J {command_n}-{job_session_id}
 #SBATCH -p high
 #SBATCH -N 1
-#SBATCH -n 8
-#SBATCH -c 8
+#SBATCH -c {c}
 #SBATCH --chdir=/homedtic/xpavon/nerfstudio_root
-#SBATCH --gres=gpu:{1}
-#SBATCH --mem-per-cpu=8G
+#SBATCH --gres=gpu:{num_gpus}
+#SBATCH --mem-per-cpu={m}G
 #SBATCH --output=./nerfstudio/bash_scripts/{job_session_id}/run_outputs/%x-%J.out
 #SBATCH --error=./nerfstudio/bash_scripts/{job_session_id}/run_outputs/%x-%J.out
 
@@ -45,7 +44,7 @@ echo -------------------
     return sbatch_file_content
 
 timestamp = calendar.timegm(time.localtime())
-JOB_SESSION_NAME = "testss"
+JOB_SESSION_NAME = "maskha"
 JOB_SESSION_ID = JOB_SESSION_NAME + "-" + str(timestamp)
 NERFSTUDIO_ROOT = Path('/homedtic/xpavon/nerfstudio_root')
 JOB_SESSION_DIR = NERFSTUDIO_ROOT / "nerfstudio/bash_scripts" / JOB_SESSION_ID
@@ -54,14 +53,21 @@ JOB_SESSION_DIR = NERFSTUDIO_ROOT / "nerfstudio/bash_scripts" / JOB_SESSION_ID
 singularity_exec_prefix = "singularity exec --nv /homedtic/xpavon/nerfstudio_root/nerfstudio_0.1.19.sif "
 nerfstudio_exec_script_prefix = singularity_exec_prefix + "python3 /homedtic/xpavon/nerfstudio_root/nerfstudio/scripts/"
 nerfstudio_train_script_prefix = nerfstudio_exec_script_prefix + "train.py "
-hanerfacto_phototourism_train_script_prefix = nerfstudio_train_script_prefix + f"hanerfacto-phototourism --viewer.start-train False --experiment-name {JOB_SESSION_ID} "
+hanerfacto_phototourism_train_script_prefix = nerfstudio_train_script_prefix + f"hanerfacto-phototourism --viewer.quit-on-train-completion True --experiment-name {JOB_SESSION_ID} "
+hanerf_phototourism_train_script_prefix = nerfstudio_train_script_prefix + f"hanerfacto --viewer.quit-on-train-completion True --experiment-name {JOB_SESSION_ID} "
 
 def main(mode):
-    
+
+    # hanerf_loss_mask_size_delta: float = 0.006
+    # hanerf_loss_mask_digit_delta: float = 0.001
+    # occlusions --use-synthetic-occlusions False
+    # --pipeline.datamanager.train-num-images-to-sample-from
+    # --pipeline.datamanager.num-times-to-repeat-images
 
     commands = [
-        hanerfacto_phototourism_train_script_prefix + "--data blablabla",
-        hanerfacto_phototourism_train_script_prefix + "--data lelele",
+        hanerf_phototourism_train_script_prefix + "--data data/mask/outputs/mask_32 --pipeline.model.enable-hanerf-loss False --pipeline.datamanager.train-num-images-to-sample-from 1 --pipeline.datamanager.train-num-times-to-repeat-images 1 occlusions --use-synthetic-occlusions False",
+        hanerf_phototourism_train_script_prefix + "--data data/mask/outputs/mask_32 --pipeline.model.hanerf-loss-mask-size-delta 0.06 --pipeline.datamanager.train-num-images-to-sample-from 1 --pipeline.datamanager.train-num-times-to-repeat-images 1",
+        hanerf_phototourism_train_script_prefix + "--data data/mask/outputs/mask_32 --pipeline.model.hanerf-loss-mask-size-delta 0.6 --pipeline.datamanager.train-num-images-to-sample-from 1 --pipeline.datamanager.train-num-times-to-repeat-images 1",
     ]
 
     assert len(commands) != 0, "no commands to run!"

@@ -39,6 +39,7 @@ from nerfstudio.data.dataparsers.instant_ngp_dataparser import (
     InstantNGPDataParserConfig,
 )
 from nerfstudio.data.dataparsers.nerfstudio_dataparser import NerfstudioDataParserConfig
+from nerfstudio.data.dataparsers.occlusions_dataparser import OcclusionsDataparserConfig
 from nerfstudio.data.dataparsers.phototourism_dataparser import (
     PhototourismDataParserConfig,
 )
@@ -108,6 +109,76 @@ method_configs["nerfacto"] = TrainerConfig(
         },
         "fields": {
             "optimizer": AdamOptimizerConfig(lr=1e-2, eps=1e-15),
+            "scheduler": None,
+        },
+    },
+    viewer=ViewerConfig(num_rays_per_chunk=1 << 15),
+    vis="viewer",
+)
+
+method_configs["hanerfacto"] = TrainerConfig(
+    method_name="hanerfacto",
+    steps_per_eval_batch=500,
+    steps_per_save=2000,
+    max_num_iterations=30000,
+    mixed_precision=True,
+    pipeline=VanillaPipelineConfig(
+        datamanager=VanillaDataManagerConfig(
+            dataparser=OcclusionsDataparserConfig(),
+            train_num_rays_per_batch=4096,
+            eval_num_rays_per_batch=4096,
+            camera_optimizer=CameraOptimizerConfig(
+                mode="SO3xR3", optimizer=AdamOptimizerConfig(lr=6e-4, eps=1e-8, weight_decay=1e-2)
+            ),
+        ),
+        model=HaNerfactoModelConfig(eval_num_rays_per_chunk=1 << 15),
+    ),
+    optimizers={
+        "proposal_networks": {
+            "optimizer": AdamOptimizerConfig(lr=1e-2, eps=1e-15),
+            "scheduler": None,
+        },
+        "fields": {
+            "optimizer": AdamOptimizerConfig(lr=1e-2, eps=1e-15),
+            "scheduler": None,
+        },
+        "losses": {
+            "optimizer": AdamOptimizerConfig(lr=1e-5, eps=1e-15),
+            "scheduler": None,
+        },
+    },
+    viewer=ViewerConfig(num_rays_per_chunk=1 << 15),
+    vis="viewer",
+)
+
+method_configs["hanerfacto-blender"] = TrainerConfig(
+    method_name="hanerfacto-blender",
+    steps_per_eval_batch=500,
+    steps_per_save=2000,
+    max_num_iterations=30000,
+    mixed_precision=True,
+    pipeline=VanillaPipelineConfig(
+        datamanager=VanillaDataManagerConfig(
+            dataparser=BlenderDataParserConfig(),
+            train_num_rays_per_batch=4096,
+            eval_num_rays_per_batch=4096,
+            camera_optimizer=CameraOptimizerConfig(
+                mode="SO3xR3", optimizer=AdamOptimizerConfig(lr=6e-4, eps=1e-8, weight_decay=1e-2)
+            ),
+        ),
+        model=HaNerfactoModelConfig(eval_num_rays_per_chunk=1 << 15),
+    ),
+    optimizers={
+        "proposal_networks": {
+            "optimizer": AdamOptimizerConfig(lr=1e-2, eps=1e-15),
+            "scheduler": None,
+        },
+        "fields": {
+            "optimizer": AdamOptimizerConfig(lr=1e-2, eps=1e-15),
+            "scheduler": None,
+        },
+        "losses": {
+            "optimizer": AdamOptimizerConfig(lr=1e-5, eps=1e-15),
             "scheduler": None,
         },
     },
@@ -187,6 +258,25 @@ method_configs["volinga"] = TrainerConfig(
     vis="viewer",
 )
 
+method_configs["instant-ngp-blender"] = TrainerConfig(
+    method_name="instant-ngp-blender",
+    steps_per_eval_batch=500,
+    steps_per_save=2000,
+    max_num_iterations=30000,
+    mixed_precision=True,
+    pipeline=DynamicBatchPipelineConfig(
+        datamanager=VanillaDataManagerConfig(dataparser=BlenderDataParserConfig(), train_num_rays_per_batch=8192),
+        model=InstantNGPModelConfig(eval_num_rays_per_chunk=8192),
+    ),
+    optimizers={
+        "fields": {
+            "optimizer": AdamOptimizerConfig(lr=1e-2, eps=1e-15),
+            "scheduler": None,
+        }
+    },
+    viewer=ViewerConfig(num_rays_per_chunk=64000),
+    vis="viewer",
+)
 method_configs["instant-ngp"] = TrainerConfig(
     method_name="instant-ngp",
     steps_per_eval_batch=500,

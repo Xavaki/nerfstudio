@@ -72,6 +72,8 @@ from nerfstudio.engine.callbacks import TrainingCallback, TrainingCallbackAttrib
 from nerfstudio.model_components.ray_generators import RayGenerator
 from nerfstudio.utils.misc import IterableWrapper
 
+from nerfstudio.data.dataparsers.occlusions_dataparser import OcclusionsDataparserConfig
+
 CONSOLE = Console(width=120)
 
 AnnotatedDataParserUnion = tyro.conf.OmitSubcommandPrefixes[  # Omit prefixes of flags in subcommands.
@@ -90,6 +92,7 @@ AnnotatedDataParserUnion = tyro.conf.OmitSubcommandPrefixes[  # Omit prefixes of
             "sdfstudio-data": SDFStudioDataParserConfig(),
             "nerfosr-data": NeRFOSRDataParserConfig(),
             "sitcoms3d-data": Sitcoms3DDataParserConfig(),
+            "occlusions" : OcclusionsDataparserConfig(),
         },
         prefix_names=False,  # Omit prefixes in subcommands themselves.
     )
