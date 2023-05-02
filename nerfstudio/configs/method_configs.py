@@ -412,7 +412,7 @@ method_configs["vanilla-hanerf-blender"] = TrainerConfig(
             "scheduler": None,
         },
         "losses": {
-            "optimizer": AdamOptimizerConfig(lr=5e-4, eps=1e-15), # xx add momentum
+            "optimizer": AdamOptimizerConfig(lr=5e-4, eps=1e-08), # xx add momentum
             "scheduler": None,
         },
     },
