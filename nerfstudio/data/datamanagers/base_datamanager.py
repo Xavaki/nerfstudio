@@ -50,6 +50,10 @@ from nerfstudio.data.dataparsers.minimal_dataparser import MinimalDataParserConf
 from nerfstudio.data.dataparsers.nerfosr_dataparser import NeRFOSRDataParserConfig
 from nerfstudio.data.dataparsers.nerfstudio_dataparser import NerfstudioDataParserConfig
 from nerfstudio.data.dataparsers.nuscenes_dataparser import NuScenesDataParserConfig
+from nerfstudio.data.dataparsers.occlusions_dataparser import (
+    BlenderOcclusionsDataparserConfig,
+    OcclusionsDataparserConfig,
+)
 from nerfstudio.data.dataparsers.phototourism_dataparser import (
     PhototourismDataParserConfig,
 )
@@ -72,8 +76,6 @@ from nerfstudio.engine.callbacks import TrainingCallback, TrainingCallbackAttrib
 from nerfstudio.model_components.ray_generators import RayGenerator
 from nerfstudio.utils.misc import IterableWrapper
 
-from nerfstudio.data.dataparsers.occlusions_dataparser import OcclusionsDataparserConfig
-
 CONSOLE = Console(width=120)
 
 AnnotatedDataParserUnion = tyro.conf.OmitSubcommandPrefixes[  # Omit prefixes of flags in subcommands.
@@ -93,6 +95,7 @@ AnnotatedDataParserUnion = tyro.conf.OmitSubcommandPrefixes[  # Omit prefixes of
             "nerfosr-data": NeRFOSRDataParserConfig(),
             "sitcoms3d-data": Sitcoms3DDataParserConfig(),
             "occlusions" : OcclusionsDataparserConfig(),
+            "occlusions-blender" : BlenderOcclusionsDataparserConfig(),
         },
         prefix_names=False,  # Omit prefixes in subcommands themselves.
     )

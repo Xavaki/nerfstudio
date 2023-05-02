@@ -39,7 +39,12 @@ from nerfstudio.data.dataparsers.instant_ngp_dataparser import (
     InstantNGPDataParserConfig,
 )
 from nerfstudio.data.dataparsers.nerfstudio_dataparser import NerfstudioDataParserConfig
+# xx xxxx
 from nerfstudio.data.dataparsers.occlusions_dataparser import OcclusionsDataparserConfig
+from nerfstudio.data.dataparsers.occlusions_dataparser import BlenderOcclusionsDataparserConfig
+from nerfstudio.models.hanerfacto import HaNerfactoModelConfig
+from nerfstudio.models.vanilla_hanerf import VanillaHanerfModel, VanillaHanerfModelConfig
+# xx xxxx
 from nerfstudio.data.dataparsers.phototourism_dataparser import (
     PhototourismDataParserConfig,
 )
@@ -56,7 +61,6 @@ from nerfstudio.models.depth_nerfacto import DepthNerfactoModelConfig
 from nerfstudio.models.instant_ngp import InstantNGPModelConfig
 from nerfstudio.models.mipnerf import MipNerfModel
 from nerfstudio.models.nerfacto import NerfactoModelConfig
-from nerfstudio.models.hanerfacto import HaNerfactoModelConfig
 from nerfstudio.models.nerfplayer_nerfacto import NerfplayerNerfactoModelConfig
 from nerfstudio.models.nerfplayer_ngp import NerfplayerNGPModelConfig
 from nerfstudio.models.neus import NeuSModelConfig
@@ -178,7 +182,7 @@ method_configs["hanerfacto-blender"] = TrainerConfig(
             "scheduler": None,
         },
         "losses": {
-            "optimizer": AdamOptimizerConfig(lr=1e-5, eps=1e-15),
+            "optimizer": AdamOptimizerConfig(lr=5e-4, eps=1e-15), # xx add momentum
             "scheduler": None,
         },
     },
@@ -385,6 +389,30 @@ method_configs["vanilla-nerf"] = TrainerConfig(
         },
         "temporal_distortion": {
             "optimizer": RAdamOptimizerConfig(lr=5e-4, eps=1e-08),
+            "scheduler": None,
+        },
+    },
+)
+
+method_configs["vanilla-hanerf-blender"] = TrainerConfig(
+    method_name="vanilla-hanerf-blender",
+    pipeline=VanillaPipelineConfig(
+        datamanager=VanillaDataManagerConfig(
+            dataparser=BlenderOcclusionsDataparserConfig(),
+        ),
+        model=VanillaHanerfModelConfig(_target=VanillaHanerfModel),
+    ),
+    optimizers={
+        "fields": {
+            "optimizer": RAdamOptimizerConfig(lr=5e-4, eps=1e-08),
+            "scheduler": None,
+        },
+        "temporal_distortion": {
+            "optimizer": RAdamOptimizerConfig(lr=5e-4, eps=1e-08),
+            "scheduler": None,
+        },
+        "losses": {
+            "optimizer": AdamOptimizerConfig(lr=5e-4, eps=1e-15), # xx add momentum
             "scheduler": None,
         },
     },
