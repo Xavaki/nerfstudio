@@ -58,16 +58,16 @@ hanerf_phototourism_train_script_prefix = nerfstudio_train_script_prefix + f"han
 
 def main(mode):
 
-    # hanerf_loss_mask_size_delta: float = 0.006
-    # hanerf_loss_mask_digit_delta: float = 0.001
+    # --pipeline.model.hanerf-loss-mask-size-delta: float = 0.006
+    # --pipeline.model.hanerf-loss-mask-digit-delta: float = 0.001
     # occlusions --use-synthetic-occlusions False
-    # --pipeline.datamanager.train-num-images-to-sample-from
-    # --pipeline.datamanager.num-times-to-repeat-images
+    # --pipeline.datamanager.train-num-images-to-sample-from --pipeline.datamanager.num-times-to-repeat-images
 
     commands = [
-        hanerf_phototourism_train_script_prefix + "--data data/mask/outputs/mask_32 --pipeline.model.enable-hanerf-loss False --pipeline.datamanager.train-num-images-to-sample-from 1 --pipeline.datamanager.train-num-times-to-repeat-images 1 occlusions --use-synthetic-occlusions False",
-        hanerf_phototourism_train_script_prefix + "--data data/mask/outputs/mask_32 --pipeline.model.hanerf-loss-mask-size-delta 0.06 --pipeline.datamanager.train-num-images-to-sample-from 1 --pipeline.datamanager.train-num-times-to-repeat-images 1",
-        hanerf_phototourism_train_script_prefix + "--data data/mask/outputs/mask_32 --pipeline.model.hanerf-loss-mask-size-delta 0.6 --pipeline.datamanager.train-num-images-to-sample-from 1 --pipeline.datamanager.train-num-times-to-repeat-images 1",
+        hanerf_phototourism_train_script_prefix + "--data data/mask/outputs/mask_32 --pipeline.model.hanerf-loss-mask-size-delta 0.6 --pipeline.model.hanerf-loss-mask-digit-delta 0.1 --pipeline.model.hanerf-debug-frequency 1500 --pipeline.datamanager.train-num-images-to-sample-from 1 --pipeline.datamanager.train-num-times-to-repeat-images 5",
+        hanerf_phototourism_train_script_prefix + "--data data/mask/outputs/mask_32 --pipeline.model.hanerf-loss-mask-size-delta 0.6 --pipeline.model.hanerf-loss-mask-digit-delta 0.1 --pipeline.model.hanerf-debug-frequency 1500",
+        hanerf_phototourism_train_script_prefix + "--data data/mask/outputs/mask_32 --pipeline.model.hanerf-loss-mask-size-delta 6 --pipeline.model.hanerf-loss-mask-digit-delta 0.1 --pipeline.model.hanerf-debug-frequency 1500",
+        hanerf_phototourism_train_script_prefix + "--data data/mask/outputs/mask_32 --pipeline.model.hanerf-loss-mask-size-delta 60 --pipeline.model.hanerf-loss-mask-digit-delta 0.1 --pipeline.model.hanerf-debug-frequency 1500",
     ]
 
     assert len(commands) != 0, "no commands to run!"

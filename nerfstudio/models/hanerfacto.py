@@ -18,20 +18,20 @@ NeRF implementation that combines many recent advancements.
 """
 from __future__ import annotations
 
-import sys
-import debugpy
 import json
-
-import shutil
 import math
-from PIL import Image
-
-
+import shutil
+import sys
 from dataclasses import dataclass, field
 from typing import Dict, List, Tuple, Type
 
+import debugpy
 import numpy as np
 import torch
+from PIL import Image
+
+# xx Ha-NeRF occlusion mask dependencies
+from torch import nn
 from torch.nn import Parameter
 from torchmetrics import PeakSignalNoiseRatio
 from torchmetrics.functional import structural_similarity_index_measure
@@ -71,8 +71,6 @@ from nerfstudio.model_components.shaders import NormalsShader
 from nerfstudio.models.base_model import Model, ModelConfig
 from nerfstudio.utils import colormaps
 
-# xx Ha-NeRF occlusion mask dependencies
-from torch import nn
 try:
     import tinycudann as tcnn
 except ImportError:
@@ -287,13 +285,12 @@ class HaNerfacto(Model):
         self.ssim = structural_similarity_index_measure
         self.lpips = LearnedPerceptualImagePatchSimilarity(normalize=True)
 
-    # xq only the parameters specified here are optimized??
     def get_param_groups(self) -> Dict[str, List[Parameter]]:
         param_groups = {}
         param_groups["proposal_networks"] = list(self.proposal_networks.parameters())
         param_groups["fields"] = list(self.field.parameters())
         if self.config.enable_hanerf_loss:
-            param_groups["losses"] = list(self.occlusion_mask_mlp.parameters())
+            param_groups["losses"] = list(self.occlusion_mask_mlp.parameters()) + list(self.occlusion_embedding.parameters())
         return param_groups
 
     def get_training_callbacks(
@@ -398,6 +395,8 @@ class HaNerfacto(Model):
                 save_pixel_count_img.save(save_path, 'JPEG')
 
                 sample_count_dict = self.debug_sample_count_dict[i]["info_dict"]
+                image_occlusion_embedding = self.occlusion_embedding(torch.tensor([i]).to(self.device))
+                sample_count_dict["occlusion_embedding"] = json.dumps(image_occlusion_embedding.tolist())
                 save_path = debug_image_dir / f"{step}_sample_count.json"
                 with open(save_path, "w") as f:
                     json.dump(sample_count_dict, f)
@@ -609,7 +608,7 @@ class HaNerfacto(Model):
                 pixel_count_img = self.debug_sample_count_dict[i]["pixel_count_img"]
                 pixel_count_img[img_pixel_coords[:,0], img_pixel_coords[:,1]] += 1
                 self.debug_sample_count_dict[i]["pixel_count_img"] = pixel_count_img
-                
+
                 sample_count_dict = self.debug_sample_count_dict[i]["info_dict"]
                 sample_count_dict["img_sample_count"] += 1
                 sample_count_dict["prop_pixels_sampled"] = pixel_count_img.count_nonzero().item() / (pixel_count_img.shape[0]*pixel_count_img.shape[1])

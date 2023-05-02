@@ -135,15 +135,15 @@ method_configs["hanerfacto"] = TrainerConfig(
     ),
     optimizers={
         "proposal_networks": {
-            "optimizer": AdamOptimizerConfig(lr=1e-2, eps=1e-15),
+            "optimizer": AdamOptimizerConfig(lr=1e-3, eps=1e-15), # default 1e-2
             "scheduler": None,
         },
         "fields": {
-            "optimizer": AdamOptimizerConfig(lr=1e-2, eps=1e-15),
+            "optimizer": AdamOptimizerConfig(lr=1e-3, eps=1e-15), # default 1e-2
             "scheduler": None,
         },
-        "losses": {
-            "optimizer": AdamOptimizerConfig(lr=1e-5, eps=1e-15),
+        "losses": { 
+            "optimizer": AdamOptimizerConfig(lr=1e-4, eps=1e-15),
             "scheduler": None,
         },
     },
